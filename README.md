@@ -35,7 +35,7 @@ func main() {
 	h := health.New()
 	
 	// define an HTTP dependency check
-	httpCheckConf := &checks.HttpCheckConfig{
+	httpCheckConf := &checks.HTTPCheckConfig{
 		CheckName: "httpbin.url.check",
 		Timeout:   1 * time.Second,
 		// dependency you're checking - use your own URL here...
@@ -44,7 +44,7 @@ func main() {
 	}
 	// create the HTTP check for the dependency
 	// fail fast when you misconfigured the URL. Don't ignore errors!!!
-	httpCheck, err := checks.NewHttpCheck(httpCheckConf)
+	httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
 	if err == nil {
 		err = h.RegisterCheck(&health.Config{
 			Check:           httpCheck,
@@ -64,7 +64,7 @@ func main() {
   // define more checks...
   
   // register a health endpoint
-  http.Handle("/_/health.json", healthhttp.HandleHealthJson(h))
+  http.Handle("/_/health.json", healthhttp.HandleHealthJSON(h))
 	
 	// serve HTTP
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -169,7 +169,7 @@ the next check execution will be delayed. Use proper time outs.
 The library provides an HTTP handler function for serving health stats in JSON format.
 You can register it using your favorite HTTP implementation like so:
 ```go
-http.Handle("/_/health.json", healthhttp.HandleHealthJson(h))
+http.Handle("/_/health.json", healthhttp.HandleHealthJSON(h))
 ```
 The endpoint can be called like so:
 ```text

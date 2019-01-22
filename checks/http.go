@@ -12,9 +12,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HttpCheckConfig configures a check for the response from a given URL.
+// HTTPCheckConfig configures a check for the response from a given URL.
 // The only required field is `URL`, which must be a valid URL.
-type HttpCheckConfig struct {
+type HTTPCheckConfig struct {
 	// CheckName is the health check name - must be a valid metric name.
 	// CheckName is required
 	CheckName string
@@ -36,12 +36,12 @@ type HttpCheckConfig struct {
 }
 
 type httpCheck struct {
-	config         *HttpCheckConfig
+	config         *HTTPCheckConfig
 	successDetails string
 }
 
-// NewHttpCheck creates a new http check defined by the given config
-func NewHttpCheck(config *HttpCheckConfig) (check Check, err error) {
+// NewHTTPCheck creates a new http check defined by the given config
+func NewHTTPCheck(config *HTTPCheckConfig) (check Check, err error) {
 	if config == nil {
 		return nil, errors.Errorf("config must not be nil")
 	}
@@ -84,7 +84,7 @@ func (check *httpCheck) Name() string {
 
 func (check *httpCheck) Execute() (details interface{}, err error) {
 	details = check.config.URL
-	resp, err := check.fetchUrl()
+	resp, err := check.fetchURL()
 	if err != nil {
 		return details, err
 	}
@@ -110,9 +110,9 @@ func (check *httpCheck) Execute() (details interface{}, err error) {
 
 }
 
-// fetchUrl executes the HTTP request to the target URL, and returns a `http.Response`, error.
+// fetchURL executes the HTTP request to the target URL, and returns a `http.Response`, error.
 // It is the callers responsibility to close the response body
-func (check *httpCheck) fetchUrl() (*http.Response, error) {
+func (check *httpCheck) fetchURL() (*http.Response, error) {
 	req, err := http.NewRequest(check.config.Method, check.config.URL, check.config.Body)
 	if err != nil {
 		return nil, errors.Errorf("unable to create check HTTP request: %v", err)

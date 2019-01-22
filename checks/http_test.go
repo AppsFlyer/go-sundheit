@@ -16,23 +16,23 @@ const (
 )
 
 func TestNewHttpCheckRequiredFields(t *testing.T) {
-	check, err := NewHttpCheck(nil)
+	check, err := NewHTTPCheck(nil)
 	assert.Nil(t, check, "nil config should yield nil check")
 	assert.Error(t, err, "nil config should yield error")
 
-	check, err = NewHttpCheck(&HttpCheckConfig{
+	check, err = NewHTTPCheck(&HTTPCheckConfig{
 		CheckName: "meh",
 	})
 	assert.Nil(t, check, "nil URL should yield nil check")
 	assert.Error(t, err, "nil URL should yield error")
 
-	check, err = NewHttpCheck(&HttpCheckConfig{
+	check, err = NewHTTPCheck(&HTTPCheckConfig{
 		URL: "http://example.org",
 	})
 	assert.Nil(t, check, "nil CheckName should yield nil check")
 	assert.Error(t, err, "nil CheckName should yield error")
 
-	check, err = NewHttpCheck(&HttpCheckConfig{
+	check, err = NewHTTPCheck(&HTTPCheckConfig{
 		URL:       ":/invalid.url",
 		CheckName: "invalid.url",
 	})
@@ -58,17 +58,17 @@ func TestNewHttpCheck(t *testing.T) {
 
 	defer server.Close()
 
-	t.Run("HttpCheck success call", testHttpCheckSuccess(server.URL, server.Client()))
-	t.Run("HttpCheck success call with body check", testHttpCheckSuccessWithExpectedBody(server.URL, server.Client()))
-	t.Run("HttpCheck success call with failing body check", testHttpCheckFailWithUnexpectedBody(server.URL, server.Client()))
-	t.Run("HttpCheck fail on status code", testHttpCheckFailStatusCode(server.URL, server.Client()))
-	t.Run("HttpCheck fail on URL", testHttpCheckFailURL(server.URL, server.Client()))
-	t.Run("HttpCheck fail on timeout", testHttpCheckFailTimeout(server.URL, server.Client()))
+	t.Run("HttpCheck success call", testHTTPCheckSuccess(server.URL, server.Client()))
+	t.Run("HttpCheck success call with body check", testHTTPCheckSuccessWithExpectedBody(server.URL, server.Client()))
+	t.Run("HttpCheck success call with failing body check", testHTTPCheckFailWithUnexpectedBody(server.URL, server.Client()))
+	t.Run("HttpCheck fail on status code", testHTTPCheckFailStatusCode(server.URL, server.Client()))
+	t.Run("HttpCheck fail on URL", testHTTPCheckFailURL(server.URL, server.Client()))
+	t.Run("HttpCheck fail on timeout", testHTTPCheckFailTimeout(server.URL, server.Client()))
 }
 
-func testHttpCheckSuccess(url string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckSuccess(url string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName: "url.check",
 			URL:       url,
 			Client:    client,
@@ -81,9 +81,9 @@ func testHttpCheckSuccess(url string, client *http.Client) func(t *testing.T) {
 	}
 }
 
-func testHttpCheckSuccessWithExpectedBody(url string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckSuccessWithExpectedBody(url string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName:    "url.check",
 			URL:          url,
 			Client:       client,
@@ -97,9 +97,9 @@ func testHttpCheckSuccessWithExpectedBody(url string, client *http.Client) func(
 	}
 }
 
-func testHttpCheckFailWithUnexpectedBody(url string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckFailWithUnexpectedBody(url string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName:    "url.check",
 			URL:          url,
 			Client:       client,
@@ -114,9 +114,9 @@ func testHttpCheckFailWithUnexpectedBody(url string, client *http.Client) func(t
 	}
 }
 
-func testHttpCheckFailStatusCode(url string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckFailStatusCode(url string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName:      "url.check",
 			URL:            url,
 			Client:         client,
@@ -131,12 +131,12 @@ func testHttpCheckFailStatusCode(url string, client *http.Client) func(t *testin
 	}
 }
 
-func testHttpCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		bogusUrl := "http://devil.dot.com:666"
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		bogusURL := "http://devil.dot.com:666"
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName: "url.check",
-			URL:       bogusUrl,
+			URL:       bogusURL,
 			Client:    client,
 		})
 		assert.Nil(t, err)
@@ -144,16 +144,16 @@ func testHttpCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
 		details, err := check.Execute()
 		assert.Error(t, err, "check should fail")
 		assert.Contains(t, err.Error(), "no such host", "check error message")
-		assert.Equal(t, bogusUrl, details, "check details when fail are the URL")
+		assert.Equal(t, bogusURL, details, "check details when fail are the URL")
 	}
 }
 
-func testHttpCheckFailTimeout(url string, client *http.Client) func(t *testing.T) {
+func testHTTPCheckFailTimeout(url string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		waitUrl := fmt.Sprintf("%s/%s?wait=%s", url, longRequest, 100*time.Millisecond)
-		check, err := NewHttpCheck(&HttpCheckConfig{
+		waitURL := fmt.Sprintf("%s/%s?wait=%s", url, longRequest, 100*time.Millisecond)
+		check, err := NewHTTPCheck(&HTTPCheckConfig{
 			CheckName: "url.check",
-			URL:       waitUrl,
+			URL:       waitURL,
 			Client:    client,
 			Timeout:   10 * time.Millisecond,
 		})
@@ -162,6 +162,6 @@ func testHttpCheckFailTimeout(url string, client *http.Client) func(t *testing.T
 		details, err := check.Execute()
 		assert.Error(t, err, "check should fail")
 		assert.Contains(t, err.Error(), "Client.Timeout exceeded", "check error message")
-		assert.Equal(t, waitUrl, details, "check details when fail are the URL")
+		assert.Equal(t, waitURL, details, "check details when fail are the URL")
 	}
 }

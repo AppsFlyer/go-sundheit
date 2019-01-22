@@ -1,6 +1,6 @@
 package checks
 
-// A simple Check implementation if all you need is a functional check
+// CustomCheck is a simple Check implementation if all you need is a functional check
 type CustomCheck struct {
 	// CheckName s the name of the check.
 	CheckName string
@@ -10,10 +10,13 @@ type CustomCheck struct {
 
 var _ Check = (*CustomCheck)(nil)
 
+// Name is the name of the check.
+// Check names must be metric compatible.
 func (check *CustomCheck) Name() string {
 	return check.CheckName
 }
 
+// Execute runs the given Checkfunc, and return it's output.
 func (check *CustomCheck) Execute() (details interface{}, err error) {
 	if check.CheckFunc == nil {
 		return "Unimplemented check", nil

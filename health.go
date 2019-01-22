@@ -71,7 +71,7 @@ type health struct {
 
 func (h *health) RegisterCheck(cfg *Config) error {
 	if cfg.Check == nil || cfg.Check.Name() == "" {
-		err := errors.WithStack(errors.New(fmt.Sprintf("misconfigured check %s", cfg.Check)))
+		err := errors.Errorf("misconfigured check %s", cfg.Check)
 		log.Println(err)
 		return err
 	}

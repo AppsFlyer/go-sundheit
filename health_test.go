@@ -100,8 +100,8 @@ func TestRegisterDeregister(t *testing.T) {
 	results, healthy = h.Results()
 	assert.True(t, healthy, "results of empty setup")
 	assert.Equal(t, 1, len(results), "num results after deregistration")
-	passingCheck, ok1 = results[passingCheckName]
-	failingCheck, ok2 = results[failingCheckName]
+	_, ok1 = results[passingCheckName]
+	_, ok2 = results[failingCheckName]
 	assert.True(t, ok1, "check exists")
 	assert.False(t, ok2, "check should have been removed")
 
@@ -109,7 +109,7 @@ func TestRegisterDeregister(t *testing.T) {
 
 	// await stop
 	time.Sleep(50 * time.Millisecond)
-	results, healthy = h.Results()
+	results, _ = h.Results()
 	assert.Empty(t, results, "results after stop")
 }
 
