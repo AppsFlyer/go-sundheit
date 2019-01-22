@@ -21,18 +21,20 @@ Or add this to your Gopkg.toml:
 import (
 	"net/http"
 	"time"
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 	"log"
-	"gitlab.appsflyer.com/Architecture/af-go-health"
-	healthhttp "gitlab.appsflyer.com/Architecture/af-go-health/http"
+
 	"github.com/pkg/errors"
+	"gitlab.appsflyer.com/Architecture/af-go-health"
+
+	healthhttp "gitlab.appsflyer.com/Architecture/af-go-health/http"
+	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
 
 func main() {
 	// create a new health instance
-	h := health.New()	
-
-  // define an HTTP dependency check
+	h := health.New()
+	
+	// define an HTTP dependency check
 	httpCheckConf := &checks.HttpCheckConfig{
 		CheckName: "httpbin.url.check",
 		Timeout:   1 * time.Second,
@@ -44,11 +46,16 @@ func main() {
 	// fail fast when you misconfigured the URL. Don't ignore errors!!!
 	httpCheck, err := checks.NewHttpCheck(httpCheckConf)
 	if err == nil {
-		h.RegisterCheck(&health.Config{
+		err = h.RegisterCheck(&health.Config{
 			Check:           httpCheck,
 			InitialDelay:    time.Second,      // the check will run once after 1 sec
 			ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
 		})
+		
+		if (err != nil) {
+			fmt.Println("Failed to register check: ", err)
+			return // or whatever
+		}
 	} else {
 		fmt.Println(err)
 		return // your call...
@@ -123,7 +130,7 @@ type Lottery struct {
 	probability float32
 }
 
-func (l *Lottery) Execute() (details interface{}, err error) {
+func (l Lottery) Execute() (details interface{}, err error) {
 	lottery := rand.Float32()
 	details = fmt.Sprintf("lottery=%f", lottery)
 	if lottery < l.probability {
@@ -132,7 +139,7 @@ func (l *Lottery) Execute() (details interface{}, err error) {
 	return
 }
 
-func (l *Lottery) Name() string {
+func (l Lottery) Name() string {
 	return l.myname
 }
 ```
@@ -143,7 +150,7 @@ h := health.New()
 ...
 
 h.RegisterCheck(&health.Config{
-  Check: &Lottery{myname: "custom.lottery.check", probability:0.3,},
+  Check: Lottery{myname: "custom.lottery.check", probability:0.3,},
   InitialDelay: 1*time.Second,
   ExecutionPeriod: 30*time.Second,
 })
@@ -152,7 +159,7 @@ h.RegisterCheck(&health.Config{
 #### Custom Checks Notes
 1. If a check take longer than the specified rate period, then next execution will be delayed, 
 but will not be concurrently executed.
-1. Checks must complete withing a reasonable time. If a check doesn't complete or gets hung, 
+1. Checks must complete within a reasonable time. If a check doesn't complete or gets hung, 
 the next check execution will be delayed. Use proper time outs.
 1. **A health-check name must be a metric name compatible string** 
   (i.e. no funky characters, and spaces allowed - just make it simple like `clicks-db-check`).

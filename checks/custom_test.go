@@ -1,9 +1,10 @@
 package checks
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"errors"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestName(t *testing.T) {

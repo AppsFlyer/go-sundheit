@@ -5,7 +5,9 @@ import (
 	"sync"
 	"fmt"
 	"log"
+
 	"github.com/pkg/errors"
+
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
 
@@ -17,7 +19,7 @@ const (
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
 type Health interface {
 	// RegisterCheck registers a health check according to the given configuration.
-	// Once RegisterCheck() is called, the check is being scheduled to run in it's own goroutine.
+	// Once RegisterCheck() is called, the check is scheduled to run in it's own goroutine.
 	// Callers must make sure the checks complete at a reasonable time frame, or the next execution will delay.
 	RegisterCheck(cfg *Config) error
 	// Deregister removes a health check from this instance, and stops it's next executions.

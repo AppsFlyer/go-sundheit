@@ -8,6 +8,8 @@ type CustomCheck struct {
 	CheckFunc func() (details interface{}, err error)
 }
 
+var _ Check = (*CustomCheck)(nil)
+
 func (check *CustomCheck) Name() string {
 	return check.CheckName
 }

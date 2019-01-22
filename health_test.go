@@ -1,12 +1,14 @@
 package health
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 	"time"
 	"errors"
 	"fmt"
+
+	"github.com/stretchr/testify/assert"
+
+	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
 
 const (
