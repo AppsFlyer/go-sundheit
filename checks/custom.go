@@ -15,7 +15,7 @@ func (check *CustomCheck) Name() string {
 func (check *CustomCheck) Execute() (details interface{}, err error) {
 	if check.CheckFunc == nil {
 		return "Unimplemented check", nil
-	} else {
-		return check.CheckFunc()
 	}
+
+	return check.CheckFunc()
 }

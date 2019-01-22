@@ -19,7 +19,7 @@ func TestExecute(t *testing.T) {
 	chk := CustomCheck{}
 	details, err := chk.Execute()
 	assert.Nil(t, err, "nil check func should execute and return nil error")
-	assert.NotNil(t, details, "nil check func should execute and return details")
+	assert.Equal(t, "Unimplemented check", details, "nil check func should execute and return details")
 
 	const expectedDetails = "my.details"
 	expectedErr := errors.New("my.error")

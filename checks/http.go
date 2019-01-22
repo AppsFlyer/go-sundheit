@@ -44,7 +44,7 @@ func NewHttpCheck(config *HttpCheckConfig) (check Check, err error) {
 		return nil, fmt.Errorf("config must not be nil")
 	}
 	if config.URL == "" {
-		return nil, fmt.Errorf("URL must not be nil")
+		return nil, fmt.Errorf("URL must not be empty")
 	}
 	_, err = url.Parse(config.URL)
 	if err != nil {
