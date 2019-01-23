@@ -87,7 +87,6 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 
 	task := checkTask{
 		stopChan: make(chan bool, 1),
-		ticker:   time.NewTicker(cfg.ExecutionPeriod),
 		check:    cfg.Check,
 	}
 	h.checkTasks[cfg.Check.Name()] = task
@@ -102,12 +101,15 @@ type checkTask struct {
 }
 
 func (h *health) stopCheckTask(name string) {
+	log.Println("Cleaning task ", name)
+
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	log.Println("Cleaning task ", name)
 	task := h.checkTasks[name]
-	task.ticker.Stop()
+	if task.ticker != nil {
+		task.ticker.Stop()
+	}
 	delete(h.results, name)
 	delete(h.checkTasks, name)
 	log.Printf("Task '%s' Stopped\n", name)
@@ -116,28 +118,37 @@ func (h *health) stopCheckTask(name string) {
 func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
 	go func() {
 		// initial execution
-		h.runCheckOrStop(task, time.After(cfg.InitialDelay))
+		if !h.runCheckOrStop(task, time.After(cfg.InitialDelay)) {
+			return
+		}
 
-		// scheduled execution
+		// scheduled recurring execution
+		task.ticker = time.NewTicker(cfg.ExecutionPeriod)
 		for {
-			h.runCheckOrStop(task, task.ticker.C)
+			if !h.runCheckOrStop(task, task.ticker.C) {
+				return
+			}
 		}
 	}()
 }
 
-func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) {
+func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) bool {
 	select {
 	case <-task.stopChan:
 		h.stopCheckTask(task.check.Name())
-		return
+		return false
 	case t := <-timerChan:
 		h.checkAndUpdateResult(task.check, t)
+		return true
 	}
 }
 
 func (h *health) checkAndUpdateResult(check checks.Check, time time.Time) {
 	log.Printf("%s running task '%s'...\n", time, check.Name())
 	details, err := check.Execute()
+	if err != nil {
+		log.Printf("Check '%s' failed: [%s]", check.Name(), err)
+	}
 	h.updateResult(check.Name(), details, err, time)
 }
 
@@ -199,7 +210,7 @@ func (h *health) updateResult(name string, details interface{}, err error, t tim
 	result := &result{
 		Details:            details,
 		Error:              newMarshalableError(err),
-		TimeStamp:          t,
+		Timestamp:          t,
 		TimeOfFirstFailure: nil,
 	}
 
@@ -226,7 +237,7 @@ type result struct {
 	// the error returned from a failed health check - nil when successful
 	Error error `json:"error,omitempty"`
 	// the time of the last health check
-	TimeStamp time.Time `json:"timestamp"`
+	Timestamp time.Time `json:"timestamp"`
 	// the number of failures that occurred in a row
 	ContiguousFailures int64 `json:"num_failures"`
 	// the time of the initial transitional failure
@@ -239,7 +250,7 @@ func (r *result) IsHealthy() bool {
 
 func (r *result) String() string {
 	return fmt.Sprintf("Result{details: %s, err: %s, time: %s, contiguousFailures: %d, timeOfFirstFailure:%s}",
-		r.Details, r.Error, r.TimeStamp, r.ContiguousFailures, r.TimeOfFirstFailure)
+		r.Details, r.Error, r.Timestamp, r.ContiguousFailures, r.TimeOfFirstFailure)
 }
 
 type marshalableError struct {
