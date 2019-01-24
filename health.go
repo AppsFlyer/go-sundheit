@@ -239,9 +239,9 @@ type result struct {
 	// the time of the last health check
 	Timestamp time.Time `json:"timestamp"`
 	// the number of failures that occurred in a row
-	ContiguousFailures int64 `json:"num_failures"`
+	ContiguousFailures int64 `json:"contiguousFailures"`
 	// the time of the initial transitional failure
-	TimeOfFirstFailure *time.Time `json:"first_failure_time"`
+	TimeOfFirstFailure *time.Time `json:"timeOfFirstFailure"`
 }
 
 func (r *result) IsHealthy() bool {

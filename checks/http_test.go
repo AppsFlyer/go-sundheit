@@ -2,12 +2,13 @@ package checks
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"net/http"
 	"strings"
 	"fmt"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
