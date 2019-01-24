@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
+	"github.com/fortytw2/leaktest"
 )
 
 const (
@@ -48,6 +49,8 @@ func TestHealthWithBogusCheck(t *testing.T) {
 }
 
 func TestRegisterDeregister(t *testing.T) {
+	leaktest.Check(t)
+
 	h := New()
 
 	const (
