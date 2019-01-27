@@ -41,10 +41,7 @@ type httpCheck struct {
 }
 
 // NewHTTPCheck creates a new http check defined by the given config
-func NewHTTPCheck(config *HTTPCheckConfig) (check Check, err error) {
-	if config == nil {
-		return nil, errors.Errorf("config must not be nil")
-	}
+func NewHTTPCheck(config HTTPCheckConfig) (check Check, err error) {
 	if config.URL == "" {
 		return nil, errors.Errorf("URL must not be empty")
 	}
@@ -56,23 +53,22 @@ func NewHTTPCheck(config *HTTPCheckConfig) (check Check, err error) {
 		return nil, errors.Errorf("CheckName must not be empty")
 	}
 
-	fullConfig := *config
-	if fullConfig.ExpectedStatus == 0 {
-		fullConfig.ExpectedStatus = http.StatusOK
+	if config.ExpectedStatus == 0 {
+		config.ExpectedStatus = http.StatusOK
 	}
-	if fullConfig.Method == "" {
-		fullConfig.Method = http.MethodGet
+	if config.Method == "" {
+		config.Method = http.MethodGet
 	}
-	if fullConfig.Timeout == 0 {
-		fullConfig.Timeout = time.Second
+	if config.Timeout == 0 {
+		config.Timeout = time.Second
 	}
-	if fullConfig.Client == nil {
-		fullConfig.Client = &http.Client{}
+	if config.Client == nil {
+		config.Client = &http.Client{}
 	}
-	fullConfig.Client.Timeout = fullConfig.Timeout
+	config.Client.Timeout = config.Timeout
 
 	check = &httpCheck{
-		config:         &fullConfig,
+		config:         &config,
 		successDetails: fmt.Sprintf("URL [%s] is accessible", config.URL),
 	}
 	return check, nil
