@@ -191,8 +191,8 @@ func (h *health) Results() (results map[string]Result, healthy bool) {
 }
 
 func (h *health) IsHealthy() (healthy bool) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 
 	healthy = true
 	for _, v := range h.results {
