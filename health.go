@@ -4,9 +4,9 @@ import (
 	"time"
 	"sync"
 	"fmt"
-	"log"
 
 	"github.com/pkg/errors"
+	"github.com/InVisionApp/go-logger"
 
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
@@ -35,6 +35,8 @@ type Health interface {
 	// DeregisterAll Deregister removes all health checks from this instance, and stops their next executions.
 	// It is equivalent of calling Deregister() for each currently registered check.
 	DeregisterAll()
+	// WithLogger allows you to change the logging implementation, defaults to standard logging
+	WithLogger(logger log.Logger)
 }
 
 // Config defines a health Check and it's scheduling timing requirements.
@@ -57,6 +59,7 @@ type Result interface {
 // New returns a new Health instance.
 func New() Health {
 	return &health{
+		logger:     log.NewSimple(),
 		results:    make(map[string]*result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
 		lock:       sync.RWMutex{},
@@ -64,6 +67,7 @@ func New() Health {
 }
 
 type health struct {
+	logger     log.Logger
 	results    map[string]*result
 	checkTasks map[string]checkTask
 	lock       sync.RWMutex
@@ -71,8 +75,8 @@ type health struct {
 
 func (h *health) RegisterCheck(cfg *Config) error {
 	if cfg.Check == nil || cfg.Check.Name() == "" {
-		err := errors.Errorf("misconfigured check %s", cfg.Check)
-		log.Println(err)
+		err := errors.Errorf("misconfigured check %v", cfg.Check)
+		h.logger.Error(err)
 		return err
 	}
 	// checks are initially failing...
@@ -101,7 +105,7 @@ type checkTask struct {
 }
 
 func (h *health) stopCheckTask(name string) {
-	log.Println("Cleaning task ", name)
+	h.logger.WithFields(log.Fields{"check": name}).Debug("Cleaning check task")
 
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -112,7 +116,7 @@ func (h *health) stopCheckTask(name string) {
 	}
 	delete(h.results, name)
 	delete(h.checkTasks, name)
-	log.Printf("Task '%s' Stopped\n", name)
+	h.logger.WithFields(log.Fields{"check": name}).Info("Check task stopped")
 }
 
 func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
@@ -144,16 +148,19 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(check checks.Check, time time.Time) {
-	log.Printf("%s running task '%s'...\n", time, check.Name())
+	h.logger.WithFields(log.Fields{"check": check.Name()}).Debug("Running check task")
 	details, err := check.Execute()
 	if err != nil {
-		log.Printf("Check '%s' failed: [%s]", check.Name(), err)
+		h.logger.WithFields(log.Fields{
+			"check": check.Name(),
+			"error": err,
+		}).Error("Check failed")
 	}
 	h.updateResult(check.Name(), details, err, time)
 }
 
 func (h *health) Deregister(name string) {
-	log.Printf("Stopping task '%s'", name)
+	h.logger.WithFields(log.Fields{"check": name}).Debug("Stopping check task")
 
 	h.lock.RLock()
 	defer h.lock.RUnlock()
@@ -166,7 +173,7 @@ func (h *health) Deregister(name string) {
 }
 
 func (h *health) DeregisterAll() {
-	log.Printf("Stopping health instance")
+	h.logger.Info("Stopping health instance")
 
 	h.lock.RLock()
 	defer h.lock.RUnlock()
@@ -229,6 +236,12 @@ func (h *health) updateResult(name string, details interface{}, err error, t tim
 	}
 
 	h.results[name] = result
+}
+
+func (h *health) WithLogger(logger log.Logger)  {
+	if logger != nil {
+		h.logger = logger
+	}
 }
 
 type result struct {

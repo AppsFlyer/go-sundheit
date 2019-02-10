@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:137a441b9903a0179439f1c497406765c3d3758a0f1e2922174dc61ae3c21fe6"
+  name = "github.com/InVisionApp/go-logger"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c377c6c3f6a48a6366517e86f77bafea18454ff1"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -45,6 +53,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/InVisionApp/go-logger",
     "github.com/fortytw2/leaktest",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
