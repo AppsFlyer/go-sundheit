@@ -6,14 +6,14 @@ and provides a health endpoint that exposes their status.
 ## Installation
 
 ```
-dep ensure -add gitlab.appsflyer.com/Architecture/af-go-health@v0.0.1
+dep ensure -add gitlab.appsflyer.com/Architecture/af-go-health@v0.0.2
 ```
 
 Or add this to your Gopkg.toml:
 ```go
 [[constraint]]
   name = "gitlab.appsflyer.com/Architecture/af-go-health"
-  version = "0.0.1"
+  version = "0.0.2"
 ```
 
 ## Usage
