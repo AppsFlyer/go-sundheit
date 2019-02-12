@@ -35,7 +35,7 @@ func main() {
 	h := health.New()
 	
 	// define an HTTP dependency check
-	httpCheckConf := &checks.HTTPCheckConfig{
+	httpCheckConf := checks.HTTPCheckConfig{
 		CheckName: "httpbin.url.check",
 		Timeout:   1 * time.Second,
 		// dependency you're checking - use your own URL here...
