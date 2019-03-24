@@ -4,6 +4,12 @@ import (
 	"time"
 	"sync"
 	"fmt"
+	"context"
+	"strconv"
+
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 
 	"github.com/pkg/errors"
 	"github.com/InVisionApp/go-logger"
@@ -14,6 +20,12 @@ import (
 const (
 	maxExpectedChecks = 16
 	initialResultMsg  = "didn't run yet"
+	valAllChecks      = "allChecks"
+)
+
+var (
+	keyCheck, _        = tag.NewKey("check")
+	keyCheckPassing, _ = tag.NewKey("check-passing")
 )
 
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
@@ -37,6 +49,8 @@ type Health interface {
 	DeregisterAll()
 	// WithLogger allows you to change the logging implementation, defaults to standard logging
 	WithLogger(logger log.Logger)
+	// Views returns the OpenCensus views for this health instance
+	Views() []*view.View
 }
 
 // Config defines a health Check and it's scheduling timing requirements.
@@ -59,18 +73,22 @@ type Result interface {
 // New returns a new Health instance.
 func New() Health {
 	return &health{
-		logger:     log.NewSimple(),
-		results:    make(map[string]*result, maxExpectedChecks),
-		checkTasks: make(map[string]checkTask, maxExpectedChecks),
-		lock:       sync.RWMutex{},
+		logger:         log.NewSimple(),
+		results:        make(map[string]*result, maxExpectedChecks),
+		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
+		lock:           sync.RWMutex{},
+		mCheckStatus:   stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail"),
+		mCheckDuration: stats.Float64("health/executeTime", "The time it took to execute a checks in ms", "ms"),
 	}
 }
 
 type health struct {
-	logger     log.Logger
-	results    map[string]*result
-	checkTasks map[string]checkTask
-	lock       sync.RWMutex
+	logger         log.Logger
+	results        map[string]*result
+	checkTasks     map[string]checkTask
+	lock           sync.RWMutex
+	mCheckStatus   *stats.Int64Measure
+	mCheckDuration *stats.Float64Measure
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
@@ -80,7 +98,7 @@ func (h *health) RegisterCheck(cfg *Config) error {
 		return err
 	}
 	// checks are initially failing...
-	h.updateResult(cfg.Check.Name(), initialResultMsg, fmt.Errorf(initialResultMsg), time.Now())
+	h.updateResult(cfg.Check.Name(), initialResultMsg, 0, fmt.Errorf(initialResultMsg), time.Now())
 	h.scheduleCheck(h.createCheckTask(cfg), cfg)
 	return nil
 }
@@ -92,6 +110,7 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 	task := checkTask{
 		stopChan: make(chan bool, 1),
 		check:    cfg.Check,
+		logger:   h.logger.WithFields(log.Fields{"check": cfg.Check.Name()}),
 	}
 	h.checkTasks[cfg.Check.Name()] = task
 
@@ -102,21 +121,39 @@ type checkTask struct {
 	stopChan chan bool
 	ticker   *time.Ticker
 	check    checks.Check
+	logger   log.Logger
+}
+
+func (t *checkTask) stop() {
+	if t.ticker != nil {
+		t.ticker.Stop()
+	}
+}
+
+func (t *checkTask) execute() (details interface{}, duration time.Duration, err error) {
+	t.logger.Debug("Running check task")
+	startTime := time.Now()
+	details, err = t.check.Execute()
+	duration = time.Since(startTime)
+	if err != nil {
+		t.logger.WithFields(log.Fields{"error": err}).Error("Check failed")
+	}
+
+	return
 }
 
 func (h *health) stopCheckTask(name string) {
-	h.logger.WithFields(log.Fields{"check": name}).Debug("Cleaning check task")
-
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	task := h.checkTasks[name]
-	if task.ticker != nil {
-		task.ticker.Stop()
-	}
+	task.logger.Debug("Cleaning check task")
+
+	task.stop()
+
 	delete(h.results, name)
 	delete(h.checkTasks, name)
-	h.logger.WithFields(log.Fields{"check": name}).Info("Check task stopped")
+	task.logger.Info("Check task stopped")
 }
 
 func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
@@ -142,21 +179,14 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 		h.stopCheckTask(task.check.Name())
 		return false
 	case t := <-timerChan:
-		h.checkAndUpdateResult(task.check, t)
+		h.checkAndUpdateResult(task, t)
 		return true
 	}
 }
 
-func (h *health) checkAndUpdateResult(check checks.Check, time time.Time) {
-	h.logger.WithFields(log.Fields{"check": check.Name()}).Debug("Running check task")
-	details, err := check.Execute()
-	if err != nil {
-		h.logger.WithFields(log.Fields{
-			"check": check.Name(),
-			"error": err,
-		}).Error("Check failed")
-	}
-	h.updateResult(check.Name(), details, err, time)
+func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
+	details, duration, err := task.execute()
+	h.updateResult(task.check.Name(), details, duration, err, checkTime)
 }
 
 func (h *health) Deregister(name string) {
@@ -201,15 +231,20 @@ func (h *health) IsHealthy() (healthy bool) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	healthy = true
-	for _, v := range h.results {
-		healthy = healthy && v.IsHealthy()
-	}
-
-	return
+	return allHealthy(h.results)
 }
 
-func (h *health) updateResult(name string, details interface{}, err error, t time.Time) {
+func allHealthy(results map[string]*result) (healthy bool) {
+	for _, v := range results {
+		if !v.IsHealthy() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (h *health) updateResult(name string, details interface{}, checkDuration time.Duration, err error, t time.Time) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -218,6 +253,7 @@ func (h *health) updateResult(name string, details interface{}, err error, t tim
 		Details:            details,
 		Error:              newMarshalableError(err),
 		Timestamp:          t,
+		Duration:           checkDuration,
 		TimeOfFirstFailure: nil,
 	}
 
@@ -236,11 +272,53 @@ func (h *health) updateResult(name string, details interface{}, err error, t tim
 	}
 
 	h.results[name] = result
+	h.recordStats(name, result)
 }
 
-func (h *health) WithLogger(logger log.Logger)  {
+func (h *health) recordStats(checkName string, result *result) {
+	thisCheckCtx := h.createMonitoringCtx(checkName, result.IsHealthy())
+	stats.Record(thisCheckCtx, h.mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
+	stats.Record(thisCheckCtx, h.mCheckStatus.M(status(result.IsHealthy()).asInt64()))
+
+	allHealthy := allHealthy(h.results)
+	allChecksCtx := h.createMonitoringCtx(valAllChecks, allHealthy)
+	stats.Record(allChecksCtx, h.mCheckStatus.M(status(allHealthy).asInt64()))
+}
+
+func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx context.Context) {
+	ctx, err := tag.New(context.Background(), tag.Insert(keyCheck, checkName), tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)))
+	if err != nil {
+		h.logger.WithFields(log.Fields{"error": err}).Error("context creation failed")
+	}
+
+	return
+}
+
+func (h *health) WithLogger(logger log.Logger) {
 	if logger != nil {
 		h.logger = logger
+	}
+}
+
+func (h *health) Views() []*view.View {
+	return []*view.View{
+		{
+			Measure:     h.mCheckDuration,
+			TagKeys:     []tag.Key{keyCheck},
+			Aggregation: view.Distribution(0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 120, 160, 200, 250, 300, 500),
+		},
+		{
+			Name:        "health/check_count_by_name_and_status",
+			Measure:     h.mCheckStatus,
+			TagKeys:     []tag.Key{keyCheck, keyCheckPassing},
+			Aggregation: view.Count(),
+		},
+		{
+			Name:        "health/check_status_by_name",
+			Measure:     h.mCheckStatus,
+			TagKeys:     []tag.Key{keyCheck},
+			Aggregation: view.LastValue(),
+		},
 	}
 }
 
@@ -251,6 +329,8 @@ type result struct {
 	Error error `json:"error,omitempty"`
 	// the time of the last health check
 	Timestamp time.Time `json:"timestamp"`
+	// the execution duration of the last check
+	Duration time.Duration `json:"duration,omitempty"`
 	// the number of failures that occurred in a row
 	ContiguousFailures int64 `json:"contiguousFailures"`
 	// the time of the initial transitional failure
@@ -264,6 +344,15 @@ func (r *result) IsHealthy() bool {
 func (r *result) String() string {
 	return fmt.Sprintf("Result{details: %s, err: %s, time: %s, contiguousFailures: %d, timeOfFirstFailure:%s}",
 		r.Details, r.Error, r.Timestamp, r.ContiguousFailures, r.TimeOfFirstFailure)
+}
+
+type status bool
+
+func (s status) asInt64() int64 {
+	if s {
+		return 1
+	}
+	return 0
 }
 
 type marshalableError struct {

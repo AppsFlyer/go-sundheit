@@ -36,7 +36,10 @@ func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	h := health.New()
 
-	h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	if err != nil {
+		t.Error("Failed to register check: ", err)
+	}
 
 	resp := execReq(h, true)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode, "status before first run")
@@ -71,7 +74,10 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	h := health.New()
 
-	h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	if err != nil {
+		t.Error("Failed to register check: ", err)
+	}
 
 	resp := execReq(h, false)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode, "status before first run")
@@ -91,13 +97,13 @@ func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 
 func unmarshalShortFormat(r io.Reader) map[string]string {
 	respMsg := make(map[string]string)
-	json.NewDecoder(r).Decode(&respMsg)
+	_ = json.NewDecoder(r).Decode(&respMsg)
 	return respMsg
 }
 
 func unmarshalLongFormat(r io.Reader) *response {
 	var respMsg response
-	json.NewDecoder(r).Decode(&respMsg)
+	_ = json.NewDecoder(r).Decode(&respMsg)
 	return &respMsg
 }
 

@@ -15,6 +15,9 @@ import (
 const (
 	successMsg = "success"
 	failedMsg  = "failed"
+
+	failingCheckName = "failing.check"
+	passingCheckName = "passing.check"
 )
 
 func TestHealthWithEmptySetup(t *testing.T) {
@@ -53,10 +56,6 @@ func TestRegisterDeregister(t *testing.T) {
 
 	h := New()
 
-	const (
-		failingCheckName = "failing.check"
-		passingCheckName = "passing.check"
-	)
 	registerCheck(h, failingCheckName, false)
 	registerCheck(h, passingCheckName, true)
 
@@ -128,7 +127,7 @@ func registerCheck(h Health, name string, passing bool) {
 		return fmt.Sprintf("%s; i=%d", failedMsg, i), errors.New(failedMsg)
 	}
 
-	h.RegisterCheck(&Config{
+	_ = h.RegisterCheck(&Config{
 		Check: &checks.CustomCheck{
 			CheckName: name,
 			CheckFunc: checkFunc,

@@ -6,14 +6,14 @@ and provides a health endpoint that exposes their status.
 ## Installation
 
 ```
-dep ensure -add gitlab.appsflyer.com/Architecture/af-go-health@v0.0.2
+dep ensure -add gitlab.appsflyer.com/Architecture/af-go-health@v0.0.3
 ```
 
 Or add this to your Gopkg.toml:
 ```go
 [[constraint]]
   name = "gitlab.appsflyer.com/Architecture/af-go-health"
-  version = "0.0.2"
+  version = "0.0.3"
 ```
 
 ## Usage
@@ -227,16 +227,30 @@ The `short` reposonse type is suitable for the consul health checks / LB heath c
 The response code is `200` when the tests pass, and `503` when they fail.
 
 ## Metrics
-***Not implemented yet!!!***
+The library exposes the following OpenCensus view for your convenience:
+* `health/check_status_by_name` - An aggregated health status gauge (0/1 for fail/pass) at the time of sampling.
+The aggregation uses the following tags:
+  * `check=allChecks`     - all checks aggregation
+  * `check=<check-name>`  - specific check aggregation
+*  `health/check_count_by_name_and_status` - Aggregated pass/fail counts for checks, with the following tags: 
+   * `check=allChecks`     - all checks aggregation
+   * `check=<check-name>`  - specific check aggregation
+   * `check-passing=[true|false]` 
+* `health/executeTime` - The time it took to execute a checks. Using the following tag:
+  * `check=<check-name>`  - specific check aggregation
 
-The library exposes the following metrics for your convenience:
-* `health.status.allChecks` - An aggregated health status gauge (0/1 for fail/pass) at the time of sampling. 
-This value may be using the cached checks results for async checks. 
-* `health.executeTime.allChecks` - The time it took to execute all checks. 
-Note that async checks aren't really being run when the health API is queried.
-* `health.executeTime.<check-name>` - The time it took to execute a checks.
-* `health.failures.<check-name>` - Fail rate. This value depends on the scheduling rate for async checks, or the querying rate for sync checks.
-* `health.status.<check-name>` - The health status gauge (0/1 for fail/pass) at the time of sampling. 
+
+The views can be registered like so:
+```go
+import (
+	"gitlab.appsflyer.com/Architecture/af-go-health"
+	"go.opencensus.io/stats/view"
+)
+
+h := health.New()
+// ...
+view.Register(h.Views()...)
+```
 
 ## Migration Process
 Don't forget to remove the previous health endpoint, and to fix the health check in OneBar to point to the new API, 
