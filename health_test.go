@@ -136,3 +136,5 @@ func registerCheck(h Health, name string, passing bool) {
 		ExecutionPeriod: 20 * time.Millisecond,
 	})
 }
+
+// TODO add metrics test

@@ -7,7 +7,6 @@ import (
 	"context"
 	"strconv"
 
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 
@@ -15,17 +14,48 @@ import (
 	"github.com/InVisionApp/go-logger"
 
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
+	"go.opencensus.io/stats/view"
 )
 
 const (
 	maxExpectedChecks = 16
 	initialResultMsg  = "didn't run yet"
-	valAllChecks      = "allChecks"
+	valAllChecks      = "all_checks"
 )
 
 var (
 	keyCheck, _        = tag.NewKey("check")
-	keyCheckPassing, _ = tag.NewKey("check-passing")
+	keyCheckPassing, _ = tag.NewKey("check_passing")
+
+	mCheckStatus       = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
+	mCheckDuration     = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
+
+	ViewCheckExecutionTime = &view.View{
+		Measure:     mCheckDuration,
+		TagKeys:     []tag.Key{keyCheck},
+		Aggregation: view.Distribution(0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 120, 160, 200, 250, 300, 500),
+	}
+
+	ViewCheckCountByNameAndStatus = &view.View		{
+		Name:        "health/check_count_by_name_and_status",
+		Measure:     mCheckStatus,
+		TagKeys:     []tag.Key{keyCheck, keyCheckPassing},
+		Aggregation: view.Count(),
+	}
+
+	ViewCheckStatusByName = &view.View{
+		Name:        "health/check_status_by_name",
+		Measure:     mCheckStatus,
+		TagKeys:     []tag.Key{keyCheck},
+		Aggregation: view.LastValue(),
+	}
+
+	// DefaultHealthViews are the default health check views provided by this package.
+	DefaultHealthViews = []*view.View{
+		ViewCheckCountByNameAndStatus,
+		ViewCheckStatusByName,
+		ViewCheckExecutionTime,
+	}
 )
 
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
@@ -49,8 +79,6 @@ type Health interface {
 	DeregisterAll()
 	// WithLogger allows you to change the logging implementation, defaults to standard logging
 	WithLogger(logger log.Logger)
-	// Views returns the OpenCensus views for this health instance
-	Views() []*view.View
 }
 
 // Config defines a health Check and it's scheduling timing requirements.
@@ -77,8 +105,6 @@ func New() Health {
 		results:        make(map[string]*result, maxExpectedChecks),
 		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
 		lock:           sync.RWMutex{},
-		mCheckStatus:   stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail"),
-		mCheckDuration: stats.Float64("health/executeTime", "The time it took to execute a checks in ms", "ms"),
 	}
 }
 
@@ -87,8 +113,6 @@ type health struct {
 	results        map[string]*result
 	checkTasks     map[string]checkTask
 	lock           sync.RWMutex
-	mCheckStatus   *stats.Int64Measure
-	mCheckDuration *stats.Float64Measure
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
@@ -277,12 +301,12 @@ func (h *health) updateResult(name string, details interface{}, checkDuration ti
 
 func (h *health) recordStats(checkName string, result *result) {
 	thisCheckCtx := h.createMonitoringCtx(checkName, result.IsHealthy())
-	stats.Record(thisCheckCtx, h.mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
-	stats.Record(thisCheckCtx, h.mCheckStatus.M(status(result.IsHealthy()).asInt64()))
+	stats.Record(thisCheckCtx, mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
+	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
 
 	allHealthy := allHealthy(h.results)
 	allChecksCtx := h.createMonitoringCtx(valAllChecks, allHealthy)
-	stats.Record(allChecksCtx, h.mCheckStatus.M(status(allHealthy).asInt64()))
+	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
 }
 
 func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx context.Context) {
@@ -297,28 +321,6 @@ func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx cont
 func (h *health) WithLogger(logger log.Logger) {
 	if logger != nil {
 		h.logger = logger
-	}
-}
-
-func (h *health) Views() []*view.View {
-	return []*view.View{
-		{
-			Measure:     h.mCheckDuration,
-			TagKeys:     []tag.Key{keyCheck},
-			Aggregation: view.Distribution(0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 120, 160, 200, 250, 300, 500),
-		},
-		{
-			Name:        "health/check_count_by_name_and_status",
-			Measure:     h.mCheckStatus,
-			TagKeys:     []tag.Key{keyCheck, keyCheckPassing},
-			Aggregation: view.Count(),
-		},
-		{
-			Name:        "health/check_status_by_name",
-			Measure:     h.mCheckStatus,
-			TagKeys:     []tag.Key{keyCheck},
-			Aggregation: view.LastValue(),
-		},
 	}
 }
 

@@ -249,7 +249,9 @@ import (
 
 h := health.New()
 // ...
-view.Register(h.Views()...)
+view.Register(health.DefaultHealthViews...)
+// or register individual views. For example:
+view.Register(health.ViewCheckExecutionTime, health.ViewCheckStatusByName, ...)
 ```
 
 ## Migration Process
