@@ -10,6 +10,9 @@ import (
 
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 	"github.com/fortytw2/leaktest"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
+	"strings"
 )
 
 const (
@@ -137,4 +140,57 @@ func registerCheck(h Health, name string, passing bool) {
 	})
 }
 
-// TODO add metrics test
+func TestHealthMetrics(t *testing.T) {
+	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+
+	h := New()
+	registerCheck(h, failingCheckName, false)
+	registerCheck(h, passingCheckName, true)
+
+	// await first execution
+	time.Sleep(21 * time.Millisecond)
+
+	checksStatusData := simplifyRows(ViewCheckStatusByName.Name)
+	assert.Equal(t, 3, len(checksStatusData), "num status rows")
+	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[ValAllChecks], "all check status")
+	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[failingCheckName], "failing check status")
+	assert.Equal(t, &view.LastValueData{Value: 1}, checksStatusData[passingCheckName], "passing check status")
+
+	checksCountData := simplifyRows(ViewCheckCountByNameAndStatus.Name)
+	assert.Equal(t, 4, len(checksCountData), "num count rows")
+	// at this stage there should have been 2 "executions" of each check, the initial state is always failing
+	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[ValAllChecks + ".false"], "all checks fail count")
+	assert.Equal(t, &view.CountData{Value: 2}, checksCountData[failingCheckName + ".false"], "failing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName + ".false"], "passing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName + ".true"], "passing check pass count")
+
+	checksTimeData := simplifyRows(ViewCheckExecutionTime.Name)
+	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
+	assert.Equal(t, int64(2), checksTimeData[passingCheckName].(*view.DistributionData).Count, "passing check timing measurement count")
+	assert.Equal(t, int64(2), checksTimeData[failingCheckName].(*view.DistributionData).Count, "failing check timing measurement count")
+
+	h.DeregisterAll()
+}
+
+func simplifyRows(viewName string) (check2data map[string]view.AggregationData) {
+	rows, err := view.RetrieveData(viewName)
+	if err != nil {
+		return nil
+	}
+
+	check2data = make(map[string]view.AggregationData)
+	for _, r := range rows {
+		check2data[tagsString(r.Tags)] = r.Data
+	}
+
+	return check2data
+}
+
+func tagsString(tags []tag.Tag) string {
+	var values []string
+	for _, t := range tags {
+		values = append(values, t.Value)
+	}
+
+	return strings.Join(values, ".")
+}

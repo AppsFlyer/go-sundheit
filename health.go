@@ -20,7 +20,8 @@ import (
 const (
 	maxExpectedChecks = 16
 	initialResultMsg  = "didn't run yet"
-	valAllChecks      = "all_checks"
+	// ValAllChecks is the value used for the check tags when tagging all tests
+	ValAllChecks      = "all_checks"
 )
 
 var (
@@ -30,12 +31,14 @@ var (
 	mCheckStatus       = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
 	mCheckDuration     = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
 
+	// ViewCheckExecutionTime is the checks execution time aggregation tagged by check name
 	ViewCheckExecutionTime = &view.View{
 		Measure:     mCheckDuration,
 		TagKeys:     []tag.Key{keyCheck},
 		Aggregation: view.Distribution(0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 120, 160, 200, 250, 300, 500),
 	}
 
+	// ViewCheckCountByNameAndStatus is the checks execution count aggregation grouped by check name, and check status
 	ViewCheckCountByNameAndStatus = &view.View		{
 		Name:        "health/check_count_by_name_and_status",
 		Measure:     mCheckStatus,
@@ -43,6 +46,7 @@ var (
 		Aggregation: view.Count(),
 	}
 
+	// ViewCheckStatusByName is the checks status aggregation tagged by check name
 	ViewCheckStatusByName = &view.View{
 		Name:        "health/check_status_by_name",
 		Measure:     mCheckStatus,
@@ -305,7 +309,7 @@ func (h *health) recordStats(checkName string, result *result) {
 	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
 
 	allHealthy := allHealthy(h.results)
-	allChecksCtx := h.createMonitoringCtx(valAllChecks, allHealthy)
+	allChecksCtx := h.createMonitoringCtx(ValAllChecks, allHealthy)
 	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
 }
 
