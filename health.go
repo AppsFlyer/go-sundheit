@@ -9,27 +9,27 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+	"go.opencensus.io/stats/view"
 
 	"github.com/pkg/errors"
 	"github.com/InVisionApp/go-logger"
 
 	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
-	"go.opencensus.io/stats/view"
 )
 
 const (
 	maxExpectedChecks = 16
 	initialResultMsg  = "didn't run yet"
 	// ValAllChecks is the value used for the check tags when tagging all tests
-	ValAllChecks      = "all_checks"
+	ValAllChecks = "all_checks"
 )
 
 var (
 	keyCheck, _        = tag.NewKey("check")
 	keyCheckPassing, _ = tag.NewKey("check_passing")
 
-	mCheckStatus       = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
-	mCheckDuration     = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
+	mCheckStatus   = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
+	mCheckDuration = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
 
 	// ViewCheckExecutionTime is the checks execution time aggregation tagged by check name
 	ViewCheckExecutionTime = &view.View{
@@ -39,7 +39,7 @@ var (
 	}
 
 	// ViewCheckCountByNameAndStatus is the checks execution count aggregation grouped by check name, and check status
-	ViewCheckCountByNameAndStatus = &view.View		{
+	ViewCheckCountByNameAndStatus = &view.View{
 		Name:        "health/check_count_by_name_and_status",
 		Measure:     mCheckStatus,
 		TagKeys:     []tag.Key{keyCheck, keyCheckPassing},
@@ -105,18 +105,18 @@ type Result interface {
 // New returns a new Health instance.
 func New() Health {
 	return &health{
-		logger:         log.NewSimple(),
-		results:        make(map[string]*result, maxExpectedChecks),
-		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
-		lock:           sync.RWMutex{},
+		logger:     log.NewSimple(),
+		results:    make(map[string]*result, maxExpectedChecks),
+		checkTasks: make(map[string]checkTask, maxExpectedChecks),
+		lock:       sync.RWMutex{},
 	}
 }
 
 type health struct {
-	logger         log.Logger
-	results        map[string]*result
-	checkTasks     map[string]checkTask
-	lock           sync.RWMutex
+	logger     log.Logger
+	results    map[string]*result
+	checkTasks map[string]checkTask
+	lock       sync.RWMutex
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {

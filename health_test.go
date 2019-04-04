@@ -5,14 +5,15 @@ import (
 	"time"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/stretchr/testify/assert"
-
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 	"github.com/fortytw2/leaktest"
+
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"strings"
+
+	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
 
 const (
@@ -159,10 +160,10 @@ func TestHealthMetrics(t *testing.T) {
 	checksCountData := simplifyRows(ViewCheckCountByNameAndStatus.Name)
 	assert.Equal(t, 4, len(checksCountData), "num count rows")
 	// at this stage there should have been 2 "executions" of each check, the initial state is always failing
-	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[ValAllChecks + ".false"], "all checks fail count")
-	assert.Equal(t, &view.CountData{Value: 2}, checksCountData[failingCheckName + ".false"], "failing check fail count")
-	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName + ".false"], "passing check fail count")
-	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName + ".true"], "passing check pass count")
+	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[ValAllChecks+".false"], "all checks fail count")
+	assert.Equal(t, &view.CountData{Value: 2}, checksCountData[failingCheckName+".false"], "failing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".false"], "passing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".true"], "passing check pass count")
 
 	checksTimeData := simplifyRows(ViewCheckExecutionTime.Name)
 	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
