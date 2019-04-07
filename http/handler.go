@@ -43,7 +43,7 @@ func HandleHealthJSON(h health.Health) http.HandlerFunc {
 		}
 
 		if err != nil {
-			w.Write([]byte(fmt.Sprintf("Failed to render results JSON: %s", err)))
+			_, _ = fmt.Fprintf(w, "Failed to render results JSON: %s", err)
 		}
 	}
 }

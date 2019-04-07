@@ -49,6 +49,21 @@
   revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
   version = "v1.3.0"
 
+[[projects]]
+  digest = "1:63b5de3cca3648683288865642def521d337d0f151c070778723c97d09d0ecbe"
+  name = "go.opencensus.io"
+  packages = [
+    "exemplar",
+    "internal/tagencoding",
+    "stats",
+    "stats/internal",
+    "stats/view",
+    "tag",
+  ]
+  pruneopts = "UT"
+  revision = "f305e5c4e2cf345eba88de13d10de1126fa45a61"
+  version = "v0.19.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -57,6 +72,9 @@
     "github.com/fortytw2/leaktest",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
+    "go.opencensus.io/stats",
+    "go.opencensus.io/stats/view",
+    "go.opencensus.io/tag",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

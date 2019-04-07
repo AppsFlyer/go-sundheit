@@ -50,7 +50,10 @@ func TestNewHttpCheck(t *testing.T) {
 		}
 
 		rw.WriteHeader(200)
-		rw.Write([]byte(expectedContent))
+		_, err := rw.Write([]byte(expectedContent))
+		if err != nil {
+			t.Fatal("Failed to write reponse: ", err)
+		}
 	}))
 
 	defer server.Close()
