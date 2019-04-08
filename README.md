@@ -3,6 +3,9 @@ A library built to provide support for defining service health for golang servic
 It allows you to register async health checks for your dependencies and the service itself, 
 and provides a health endpoint that exposes their status.
 
+## What's go-sundheit?
+The project is named after the German word `Gesundheit` which means ‘health’, and it is pronounced `/ɡəˈzo͝on(t)īt/`.
+
 ## Installation
 
 ```
