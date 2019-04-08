@@ -1,18 +1,18 @@
 package http
 
 import (
-	"testing"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"io/ioutil"
-	"encoding/json"
-	"io"
-	"fmt"
+	"testing"
 	"time"
 
+	"github.com/AppsFlyer/go-sundheit"
+	"github.com/AppsFlyer/go-sundheit/checks"
 	"github.com/stretchr/testify/assert"
-	"gitlab.appsflyer.com/Architecture/af-go-health"
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
 )
 
 func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
@@ -123,7 +123,7 @@ func createCheck(name string, passing bool, delay time.Duration) *health.Config 
 	}
 }
 
-func execReq(h health.Health, longFormat bool) (*http.Response) {
+func execReq(h health.Health, longFormat bool) *http.Response {
 	var path = "/meh"
 	if !longFormat {
 		path = fmt.Sprintf("%s?type=%s", path, ReportTypeShort)

@@ -1,4 +1,4 @@
-# af-go-health
+# go-sundheit
 A library built to provide support for defining service health for golang services.
 It allows you to register async health checks for your dependencies and the service itself, 
 and provides a health endpoint that exposes their status.
@@ -6,13 +6,13 @@ and provides a health endpoint that exposes their status.
 ## Installation
 
 ```
-dep ensure -add gitlab.appsflyer.com/Architecture/af-go-health@v0.0.3
+dep ensure -add github.com/AppsFlyer/go-sundheit@v0.0.3
 ```
 
 Or add this to your Gopkg.toml:
 ```go
 [[constraint]]
-  name = "gitlab.appsflyer.com/Architecture/af-go-health"
+  name = "github.com/AppsFlyer/go-sundheit"
   version = "0.0.3"
 ```
 
@@ -24,10 +24,10 @@ import (
 	"log"
 
 	"github.com/pkg/errors"
-	"gitlab.appsflyer.com/Architecture/af-go-health"
+	"github.com/AppsFlyer/go-sundheit"
 
-	healthhttp "gitlab.appsflyer.com/Architecture/af-go-health/http"
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
+	healthhttp "github.com/AppsFlyer/go-sundheit/http"
+	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
   // define more checks...
   
   // register a health endpoint
-  http.Handle("/_/health.json", healthhttp.HandleHealthJSON(h))
+  http.Handle("/admin/health.json", healthhttp.HandleHealthJSON(h))
 	
 	// serve HTTP
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -169,11 +169,11 @@ the next check execution will be delayed. Use proper time outs.
 The library provides an HTTP handler function for serving health stats in JSON format.
 You can register it using your favorite HTTP implementation like so:
 ```go
-http.Handle("/_/health.json", healthhttp.HandleHealthJSON(h))
+http.Handle("/admin/health.json", healthhttp.HandleHealthJSON(h))
 ```
 The endpoint can be called like so:
 ```text
-~ $ curl -i http://localhost:8080/_/health.json
+~ $ curl -i http://localhost:8080/admin/health.json
 HTTP/1.1 503 Service Unavailable
 Content-Type: application/json
 Date: Tue, 22 Jan 2019 09:31:46 GMT
@@ -208,7 +208,7 @@ Content-Length: 701
 ```
 Or for the shorter version:
 ```text
-~ $ curl -i http://localhost:8080/_/health.json?type=short
+~ $ curl -i http://localhost:8080/admin/health.json?type=short
 HTTP/1.1 503 Service Unavailable
 Content-Type: application/json
 Date: Tue, 22 Jan 2019 09:40:19 GMT
@@ -243,7 +243,7 @@ The aggregation uses the following tags:
 The views can be registered like so:
 ```go
 import (
-	"gitlab.appsflyer.com/Architecture/af-go-health"
+	"github.com/AppsFlyer/go-sundheit"
 	"go.opencensus.io/stats/view"
 )
 
@@ -253,7 +253,3 @@ view.Register(health.DefaultHealthViews...)
 // or register individual views. For example:
 view.Register(health.ViewCheckExecutionTime, health.ViewCheckStatusByName, ...)
 ```
-
-## Migration Process
-Don't forget to remove the previous health endpoint, and to fix the health check in OneBar to point to the new API, 
-e.g. `http://localhost:8080/_/health.json`

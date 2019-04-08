@@ -1,19 +1,19 @@
 package health
 
 import (
-	"testing"
-	"time"
 	"errors"
 	"fmt"
 	"strings"
+	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/fortytw2/leaktest"
+	"github.com/stretchr/testify/assert"
 
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
+	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 const (

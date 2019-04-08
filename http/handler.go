@@ -1,11 +1,11 @@
 package http
 
 import (
-	"net/http"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"net/http"
 
-	"gitlab.appsflyer.com/Architecture/af-go-health"
+	"github.com/AppsFlyer/go-sundheit"
 )
 
 const (

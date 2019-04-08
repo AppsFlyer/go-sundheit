@@ -1,10 +1,6 @@
 all: test
 
-deps:
-	##### ensuring deps #####
-	dep ensure -v
-
-build: deps
+build: 
 	##### building #####
 	go build -v
 

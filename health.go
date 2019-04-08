@@ -1,20 +1,20 @@
 package health
 
 import (
-	"time"
-	"sync"
-	"fmt"
 	"context"
+	"fmt"
 	"strconv"
+	"sync"
+	"time"
 
 	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 
-	"github.com/pkg/errors"
 	"github.com/InVisionApp/go-logger"
+	"github.com/pkg/errors"
 
-	"gitlab.appsflyer.com/Architecture/af-go-health/checks"
+	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 const (
