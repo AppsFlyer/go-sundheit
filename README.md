@@ -7,16 +7,14 @@ and provides a health endpoint that exposes their status.
 The project is named after the German word `Gesundheit` which means ‘health’, and it is pronounced `/ɡəˈzo͝on(t)īt/`.
 
 ## Installation
+Using go modules:
+```
+go get github.com/AppsFlyer/go-sundheit@v0.0.3
+```
 
+Using dep:
 ```
 dep ensure -add github.com/AppsFlyer/go-sundheit@v0.0.3
-```
-
-Or add this to your Gopkg.toml:
-```go
-[[constraint]]
-  name = "github.com/AppsFlyer/go-sundheit"
-  version = "0.0.3"
 ```
 
 ## Usage
