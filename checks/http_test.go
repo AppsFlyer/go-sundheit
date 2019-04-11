@@ -1,11 +1,11 @@
 package checks
 
 import (
-	"testing"
-	"net/http/httptest"
-	"net/http"
-	"strings"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"

@@ -8,4 +8,4 @@ env:
   - GO111MODULE=on
 
 script:
-  - go test -race -v ./...
+  - make testflags="-race"

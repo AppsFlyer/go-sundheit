@@ -1,13 +1,13 @@
 package checks
 
 import (
-	"net/url"
-	"net/http"
-	"time"
-	"io"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )

@@ -11,10 +11,9 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
+	"github.com/AppsFlyer/go-sundheit/checks"
 	"github.com/InVisionApp/go-logger"
 	"github.com/pkg/errors"
-
-	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 const (

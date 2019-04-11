@@ -1,8 +1,8 @@
 package checks
 
 import (
-	"testing"
 	"errors"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
