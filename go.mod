@@ -6,6 +6,7 @@ require (
 	github.com/InVisionApp/go-logger v1.0.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fortytw2/leaktest v1.3.0
+	github.com/golangci/golangci-lint v1.16.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.3.0
