@@ -100,9 +100,9 @@ You may also use the low level `checks.NewResolveCheck` specifying a custom `Loo
 For example you may register a reverse DNS lookup check like so:
 ```go
 func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err error) {
-	names, err := net.DefaultResolver.LookupAddr(ctx, addr)
-	resolvedCount = len(names)
-	return
+  names, err := net.DefaultResolver.LookupAddr(ctx, addr)
+  resolvedCount = len(names)
+  return
 }
 
 //...
