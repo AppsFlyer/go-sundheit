@@ -11,12 +11,12 @@ The project is named after the German word `Gesundheit` which means ‘health’
 ## Installation
 Using go modules:
 ```
-go get github.com/AppsFlyer/go-sundheit@v0.0.3
+go get github.com/AppsFlyer/go-sundheit@v0.0.4
 ```
 
 Using dep:
 ```
-dep ensure -add github.com/AppsFlyer/go-sundheit@v0.0.3
+dep ensure -add github.com/AppsFlyer/go-sundheit@v0.0.4
 ```
 
 ## Usage
@@ -72,6 +72,45 @@ func main() {
 	// serve HTTP
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+```
+
+### Built-in Checks
+The library comes with a set of built-in checks.
+Currently implemented checks are as follows:
+
+#### HTTP built-in check
+The HTTP check allows you to trigger an HTTP request to one of your dependencies, 
+and verify the response status, and optionally the content of the response body.
+Example was given above in the [usage](#usage) section
+
+#### DNS built-in check(s)
+The DNS checks allow you to perform lookup to a given hostname / domain name / CNAME / etc, 
+and validate that it resolves to at least the minimum number of required results.
+
+Creating a host lookup check is easy:
+```go
+// Schedule a host resolution check for `github.com`, requiring at least one results, and running every 10 sec
+h.RegisterCheck(&health.Config{
+  Check:           checks.NewHostResolveCheck("github", 200*time.Millisecond, 1),
+  ExecutionPeriod: 10 * time.Second,
+})
+```
+
+You may also use the low level `checks.NewResolveCheck` specifying a custom `LookupFunc` if you want to to perform other kinds of lookups.
+For example you may register a reverse DNS lookup check like so:
+```go
+func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err error) {
+	names, err := net.DefaultResolver.LookupAddr(ctx, addr)
+	resolvedCount = len(names)
+	return
+}
+
+//...
+
+h.RegisterCheck(&health.Config{
+  Check:           checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
+  ExecutionPeriod: 10 * time.Second,
+})
 ```
 
 ### Custom Checks
