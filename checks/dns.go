@@ -28,7 +28,7 @@ func NewResolveCheck(lookupFn LookupFunc, resolveThis string, timeout time.Durat
 			defer cancel()
 
 			resolvedCount, err := lookupFn(ctx, resolveThis)
-			details = fmt.Sprintf("[%d] ips were resolved", resolvedCount)
+			details = fmt.Sprintf("[%d] results were resolved", resolvedCount)
 			if err != nil {
 				return
 			}

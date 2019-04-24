@@ -17,7 +17,7 @@ func TestNewHostResolveCheck(t *testing.T) {
 
 	details, err := check.Execute()
 	assert.NoError(t, err, "check execution should succeed")
-	assert.Equal(t, "[1] ips were resolved", details)
+	assert.Equal(t, "[1] results were resolved", details)
 }
 
 func TestNewHostResolveCheck_noSuchHost(t *testing.T) {
@@ -29,7 +29,7 @@ func TestNewHostResolveCheck_noSuchHost(t *testing.T) {
 
 	assert.Error(t, err, "check execution should fail")
 	assert.Contains(t, err.Error(), "no such host")
-	assert.Equal(t, "[0] ips were resolved", details)
+	assert.Equal(t, "[0] results were resolved", details)
 }
 
 func TestNewHostResolveCheck_timeout(t *testing.T) {
@@ -39,7 +39,7 @@ func TestNewHostResolveCheck_timeout(t *testing.T) {
 
 	assert.Error(t, err, "check execution should fail")
 	assert.Contains(t, err.Error(), "i/o timeout")
-	assert.Equal(t, "[0] ips were resolved", details)
+	assert.Equal(t, "[0] results were resolved", details)
 }
 
 const (
@@ -53,7 +53,7 @@ func TestNewResolveCheck_lookupError(t *testing.T) {
 	assert.Equal(t, "resolve.whatever", check.Name(), "check name")
 	details, err := check.Execute()
 	assert.EqualErrorf(t, err, ExpectedError, "error message")
-	assert.Equal(t, fmt.Sprintf("[%d] ips were resolved", ExpectedCount), details)
+	assert.Equal(t, fmt.Sprintf("[%d] results were resolved", ExpectedCount), details)
 }
 
 func TestNewResolveCheck_expectedCount(t *testing.T) {
@@ -61,7 +61,7 @@ func TestNewResolveCheck_expectedCount(t *testing.T) {
 
 	details, err := check.Execute()
 	assert.EqualErrorf(t, err, fmt.Sprintf("[whatever] lookup returned 0 results, but requires at least %d", ExpectedCount), "error message")
-	assert.Equal(t, "[0] ips were resolved", details)
+	assert.Equal(t, "[0] results were resolved", details)
 }
 
 func creteMockLookupFunc(resultCount int, err error) LookupFunc {
