@@ -22,55 +22,55 @@ dep ensure -add github.com/AppsFlyer/go-sundheit@v0.0.6
 ## Usage
 ```go
 import (
-	"net/http"
-	"time"
-	"log"
+  "net/http"
+  "time"
+  "log"
 
-	"github.com/pkg/errors"
-	"github.com/AppsFlyer/go-sundheit"
+  "github.com/pkg/errors"
+  "github.com/AppsFlyer/go-sundheit"
 
-	healthhttp "github.com/AppsFlyer/go-sundheit/http"
-	"github.com/AppsFlyer/go-sundheit/checks"
+  healthhttp "github.com/AppsFlyer/go-sundheit/http"
+  "github.com/AppsFlyer/go-sundheit/checks"
 )
 
 func main() {
-	// create a new health instance
-	h := health.New()
-	
-	// define an HTTP dependency check
-	httpCheckConf := checks.HTTPCheckConfig{
-		CheckName: "httpbin.url.check",
-		Timeout:   1 * time.Second,
-		// dependency you're checking - use your own URL here...
-		// this URL will fail 50% of the times
-		URL:       "http://httpbin.org/status/200,300",
-	}
-	// create the HTTP check for the dependency
-	// fail fast when you misconfigured the URL. Don't ignore errors!!!
-	httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
-	if err == nil {
-		err = h.RegisterCheck(&health.Config{
-			Check:           httpCheck,
-			InitialDelay:    time.Second,      // the check will run once after 1 sec
-			ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
-		})
-		
-		if (err != nil) {
-			fmt.Println("Failed to register check: ", err)
-			return // or whatever
-		}
-	} else {
-		fmt.Println(err)
-		return // your call...
-	}
+  // create a new health instance
+  h := health.New()
+  
+  // define an HTTP dependency check
+  httpCheckConf := checks.HTTPCheckConfig{
+    CheckName: "httpbin.url.check",
+    Timeout:   1 * time.Second,
+    // dependency you're checking - use your own URL here...
+    // this URL will fail 50% of the times
+    URL:       "http://httpbin.org/status/200,300",
+  }
+  // create the HTTP check for the dependency
+  // fail fast when you misconfigured the URL. Don't ignore errors!!!
+  httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
+  if err == nil {
+    fmt.Println(err)
+    return // your call...
+  }
+  
+  err = h.RegisterCheck(&health.Config{
+    Check:           httpCheck, 
+    InitialDelay:    time.Second,      // the check will run once after 1 sec
+    ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
+  })
+  
+  if (err != nil) {
+    fmt.Println("Failed to register check: ", err)
+    return // or whatever
+  }
 
   // define more checks...
   
   // register a health endpoint
   http.Handle("/admin/health.json", healthhttp.HandleHealthJSON(h))
-	
-	// serve HTTP
-	log.Fatal(http.ListenAndServe(":8080", nil))
+  
+  // serve HTTP
+  log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
 
