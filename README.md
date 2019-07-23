@@ -48,7 +48,7 @@ func main() {
   // create the HTTP check for the dependency
   // fail fast when you misconfigured the URL. Don't ignore errors!!!
   httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
-  if err == nil {
+  if err != nil {
     fmt.Println(err)
     return // your call...
   }
@@ -89,9 +89,9 @@ and validate that it resolves to at least the minimum number of required results
 
 Creating a host lookup check is easy:
 ```go
-// Schedule a host resolution check for `github.com`, requiring at least one results, and running every 10 sec
+// Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
 h.RegisterCheck(&health.Config{
-  Check:           checks.NewHostResolveCheck("github", 200*time.Millisecond, 1),
+  Check:           checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
   ExecutionPeriod: 10 * time.Second,
 })
 ```
