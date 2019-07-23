@@ -40,6 +40,7 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
+	defer h.DeregisterAll()
 
 	resp := execReq(h, true)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode, "status before first run")
@@ -78,6 +79,7 @@ func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
+	defer h.DeregisterAll()
 
 	resp := execReq(h, false)
 	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode, "status before first run")

@@ -43,6 +43,7 @@ func TestHealthWithBogusCheck(t *testing.T) {
 		ExecutionPeriod: 1,
 		InitialDelay:    1,
 	})
+	defer h.DeregisterAll()
 
 	assert.Error(t, err, "register bogus check should fail")
 	assert.Contains(t, err.Error(), "misconfigured check", "fail message")
@@ -51,8 +52,6 @@ func TestHealthWithBogusCheck(t *testing.T) {
 	results, healthy := h.Results()
 	assert.True(t, healthy, "results after bogus register")
 	assert.Empty(t, results, "results after bogus register")
-
-	h.DeregisterAll()
 }
 
 func TestRegisterDeregister(t *testing.T) {
@@ -147,6 +146,7 @@ func TestHealthMetrics(t *testing.T) {
 	h := New()
 	registerCheck(h, failingCheckName, false)
 	registerCheck(h, passingCheckName, true)
+	defer h.DeregisterAll()
 
 	// await first execution
 	time.Sleep(21 * time.Millisecond)
@@ -169,8 +169,6 @@ func TestHealthMetrics(t *testing.T) {
 	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
 	assert.Equal(t, int64(2), checksTimeData[passingCheckName].(*view.DistributionData).Count, "passing check timing measurement count")
 	assert.Equal(t, int64(2), checksTimeData[failingCheckName].(*view.DistributionData).Count, "failing check timing measurement count")
-
-	h.DeregisterAll()
 }
 
 func simplifyRows(viewName string) (check2data map[string]view.AggregationData) {
