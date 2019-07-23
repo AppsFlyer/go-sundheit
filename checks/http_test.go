@@ -133,7 +133,7 @@ func testHTTPCheckFailStatusCode(url string, client *http.Client) func(t *testin
 
 func testHTTPCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
 	return func(t *testing.T) {
-		bogusURL := "http://devil.dot.com:666"
+		bogusURL := "http://devil-dot-com:666"
 		check, err := NewHTTPCheck(HTTPCheckConfig{
 			CheckName: "url.check",
 			URL:       bogusURL,
