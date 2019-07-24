@@ -92,6 +92,8 @@ type Config struct {
 	ExecutionPeriod time.Duration
 	// InitialDelay is the time to delay first execution; defaults to zero.
 	InitialDelay time.Duration
+	// InitiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false
+	InitiallyPassing bool
 }
 
 // Result represents the output of a health check execution.
@@ -124,8 +126,14 @@ func (h *health) RegisterCheck(cfg *Config) error {
 		h.logger.Error(err)
 		return err
 	}
-	// checks are initially failing...
-	h.updateResult(cfg.Check.Name(), initialResultMsg, 0, fmt.Errorf(initialResultMsg), time.Now())
+
+	// checks are initially failing by default, but we allow overrides...
+	var initialErr error
+	if !cfg.InitiallyPassing {
+		initialErr = fmt.Errorf(initialResultMsg)
+	}
+
+	h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
 	h.scheduleCheck(h.createCheckTask(cfg), cfg)
 	return nil
 }

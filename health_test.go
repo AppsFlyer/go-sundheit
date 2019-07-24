@@ -20,8 +20,9 @@ const (
 	successMsg = "success"
 	failedMsg  = "failed"
 
-	failingCheckName = "failing.check"
-	passingCheckName = "passing.check"
+	failingCheckName          = "failing.check"
+	passingCheckName          = "passing.check"
+	initiallyPassingCheckName = "initially.passing.check"
 )
 
 func TestHealthWithEmptySetup(t *testing.T) {
@@ -59,8 +60,9 @@ func TestRegisterDeregister(t *testing.T) {
 
 	h := New()
 
-	registerCheck(h, failingCheckName, false)
-	registerCheck(h, passingCheckName, true)
+	registerCheck(h, failingCheckName, false, false)
+	registerCheck(h, passingCheckName, true, false)
+	registerCheck(h, initiallyPassingCheckName, true, true)
 
 	assert.False(t, h.IsHealthy(), "health after registration before first run")
 	results, healthy := h.Results()
@@ -69,12 +71,16 @@ func TestRegisterDeregister(t *testing.T) {
 
 	passingCheck, ok1 := results[passingCheckName]
 	failingCheck, ok2 := results[failingCheckName]
+	initiallyPassingCheck, ok3 := results[initiallyPassingCheckName]
 	assert.True(t, ok1, "check exists")
 	assert.True(t, ok2, "check exists")
-	assert.False(t, passingCheck.IsHealthy(), "check initially fails until first execution")
-	assert.False(t, failingCheck.IsHealthy(), "check initially fails until first execution")
+	assert.True(t, ok3, "check exists")
+	assert.False(t, passingCheck.IsHealthy(), "check initially fails until first execution by default")
+	assert.False(t, failingCheck.IsHealthy(), "check initially fails until first execution by default")
+	assert.True(t, initiallyPassingCheck.IsHealthy(), "check should initially pass")
 	assert.Contains(t, passingCheck.String(), "didn't run yet", "initial details")
 	assert.Contains(t, failingCheck.String(), "didn't run yet", "initial details")
+	assert.Contains(t, initiallyPassingCheck.String(), "didn't run yet", "initial details")
 
 	// await first execution
 	time.Sleep(50 * time.Millisecond)
@@ -85,30 +91,36 @@ func TestRegisterDeregister(t *testing.T) {
 
 	passingCheck, ok1 = results[passingCheckName]
 	failingCheck, ok2 = results[failingCheckName]
-	passingCheck.IsHealthy()
+	initiallyPassingCheck, ok3 = results[initiallyPassingCheckName]
 
 	assert.True(t, ok1, "check exists")
 	assert.True(t, ok2, "check exists")
+	assert.True(t, ok3, "check exists")
 	assert.True(t, passingCheck.IsHealthy(), "succeeding check should pass")
 	assert.False(t, failingCheck.IsHealthy(), "failing check check should fail")
+	assert.True(t, initiallyPassingCheck.IsHealthy(), "passing check check should pass")
 	assert.NotContains(t, passingCheck.String(), "didn't run yet", "details after execution")
 	assert.NotContains(t, failingCheck.String(), "didn't run yet", "details after execution")
+	assert.NotContains(t, initiallyPassingCheck.String(), "didn't run yet", "details after execution")
 	assert.Contains(t, passingCheck.String(), "success", "details after execution")
 	assert.Contains(t, failingCheck.String(), "fail", "details after execution")
+	assert.Contains(t, initiallyPassingCheck.String(), "success", "details after execution")
 
 	h.Deregister(failingCheckName)
 	// await check cleanup
 	time.Sleep(50 * time.Millisecond)
 
-	assert.True(t, h.IsHealthy(), "health after failing test deregistration")
+	assert.True(t, h.IsHealthy(), "health after failing checks deregistration")
 
 	results, healthy = h.Results()
-	assert.True(t, healthy, "results of empty setup")
-	assert.Equal(t, 1, len(results), "num results after deregistration")
+	assert.True(t, healthy, "results of only passing checks should be healthy")
+	assert.Equal(t, 2, len(results), "num results after deregistration")
 	_, ok1 = results[passingCheckName]
 	_, ok2 = results[failingCheckName]
+	_, ok3 = results[initiallyPassingCheckName]
 	assert.True(t, ok1, "check exists")
 	assert.False(t, ok2, "check should have been removed")
+	assert.True(t, ok3, "check exists")
 
 	h.DeregisterAll()
 
@@ -118,7 +130,7 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Empty(t, results, "results after stop")
 }
 
-func registerCheck(h Health, name string, passing bool) {
+func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 	i := 0
 	checkFunc := func() (details interface{}, err error) {
 		i++
@@ -135,8 +147,9 @@ func registerCheck(h Health, name string, passing bool) {
 			CheckName: name,
 			CheckFunc: checkFunc,
 		},
-		InitialDelay:    20 * time.Millisecond,
-		ExecutionPeriod: 20 * time.Millisecond,
+		InitialDelay:     20 * time.Millisecond,
+		ExecutionPeriod:  20 * time.Millisecond,
+		InitiallyPassing: initiallyPassing,
 	})
 }
 
@@ -144,8 +157,8 @@ func TestHealthMetrics(t *testing.T) {
 	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
 
 	h := New()
-	registerCheck(h, failingCheckName, false)
-	registerCheck(h, passingCheckName, true)
+	registerCheck(h, failingCheckName, false, false)
+	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
 
 	// await first execution
