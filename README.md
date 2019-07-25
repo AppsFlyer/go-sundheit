@@ -1,6 +1,7 @@
 # go-sundheit
 [![Build Status](https://travis-ci.org/AppsFlyer/go-sundheit.svg?branch=master)](https://travis-ci.org/AppsFlyer/go-sundheit)
 [![Coverage Status](https://coveralls.io/repos/github/AppsFlyer/go-sundheit/badge.svg?branch=master)](https://coveralls.io/github/AppsFlyer/go-sundheit?branch=master)
+[![Godocs](https://img.shields.io/badge/golang-documentation-blue.svg)](https://godoc.org/github.com/AppsFlyer/go-sundheit)
 
 A library built to provide support for defining service health for golang services.
 It allows you to register async health checks for your dependencies and the service itself, 
