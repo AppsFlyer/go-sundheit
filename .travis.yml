@@ -4,8 +4,12 @@ go:
   - 1.11.x
   - 1.12.x
 
+before_install:
+  - go get github.com/mattn/goveralls
+
 env:
   - GO111MODULE=on
 
 script:
   - make testflags="-race"
+  - $GOPATH/bin/goveralls -service=travis-ci
