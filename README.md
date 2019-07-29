@@ -200,6 +200,37 @@ h.RegisterCheck(&health.Config{
 })
 ```
 
+#### Adding a check that ignores SSL errors:
+```go
+  h := health.New()
+  tr := &http.Transport{
+    TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
+  httpclient := &http.Client{Transport: tr}
+
+  httpCheckConf := checks.HTTPCheckConfig{
+    CheckName: "httpbin.url.check",
+    Timeout:   1 * time.Second,
+    URL:       configuration.ChefServerURL,
+    Client: httpclient,
+  }
+  httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
+
+  err = h.RegisterCheck(&health.Config{
+    Check:           httpCheck,
+    InitialDelay:    time.Second,      // the check will run once after 1 sec
+    ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
+  })
+
+  if err != nil {
+    aflogger.Error("Failed to register check: \n" + fmt.Sprint(err))
+  }
+
+  http.HandleFunc("/health", healthhttp.HandleHealthJSON(h))
+
+```
+
+
 #### Custom Checks Notes
 1. If a check take longer than the specified rate period, then next execution will be delayed, 
 but will not be concurrently executed.
