@@ -11,5 +11,6 @@ env:
   - GO111MODULE=on
 
 script:
-  - make testflags="-race"
+  - make
+#  - make testflags="-race"
   - $GOPATH/bin/goveralls -service=travis-ci
