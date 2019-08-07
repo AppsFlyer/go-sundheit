@@ -1,6 +1,7 @@
 # go-sundheit
 [![Build Status](https://travis-ci.org/AppsFlyer/go-sundheit.svg?branch=master)](https://travis-ci.org/AppsFlyer/go-sundheit)
 [![Coverage Status](https://coveralls.io/repos/github/AppsFlyer/go-sundheit/badge.svg?branch=master)](https://coveralls.io/github/AppsFlyer/go-sundheit?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/AppsFlyer/go-sundheit)](https://goreportcard.com/report/github.com/AppsFlyer/go-sundheit)
 [![Godocs](https://img.shields.io/badge/golang-documentation-blue.svg)](https://godoc.org/github.com/AppsFlyer/go-sundheit)
 
 <img align="right" src="docs/go-sundheit.png" width="200">
