@@ -10,7 +10,7 @@ It allows you to register async health checks for your dependencies and the serv
 and provides a health endpoint that exposes their status.
 
 ## What's go-sundheit?
-The project is named after the German word `Gesundheit` which means ‘health’, and it is pronounced `/ɡəˈzo͝on(t)īt/`.
+The project is named after the German word `Gesundheit` which means ‘health’, and it is pronounced `/ɡəˈzʊntˌhaɪ̯t/`.
 
 ## Installation
 Using go modules:
