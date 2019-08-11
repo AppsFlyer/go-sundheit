@@ -8,8 +8,7 @@ before_install:
   - go get github.com/mattn/goveralls
 
 env:
-  - GO111MODULE=on
-  - GOPROXY=https://proxy.golang.org
+  - GO111MODULE=on GOPROXY=https://proxy.golang.org
 
 script:
   - make
