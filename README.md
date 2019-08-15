@@ -269,7 +269,7 @@ Content-Length: 105
 }
 ```
 
-The `short` reposonse type is suitable for the consul health checks / LB heath checks.
+The `short` response type is suitable for the consul health checks / LB heath checks.
 
 The response code is `200` when the tests pass, and `503` when they fail.
 
