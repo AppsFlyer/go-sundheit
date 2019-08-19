@@ -33,7 +33,12 @@ type HTTPCheckConfig struct {
 	Client *http.Client
 	// Timeout is the timeout used for the HTTP request, defaults to "1s".
 	Timeout time.Duration
+	// Options allow you to configure the HTTP request with arbitrary settings, e.g. add request headers, etc.
+	Options []RequestOption
 }
+
+// RequestOption configures the request with arbitrary settings, e.g. add request headers, etc.
+type RequestOption func(r *http.Request)
 
 type httpCheck struct {
 	config         *HTTPCheckConfig
@@ -114,10 +119,18 @@ func (check *httpCheck) fetchURL() (*http.Response, error) {
 		return nil, errors.Errorf("unable to create check HTTP request: %v", err)
 	}
 
+	configureHTTPOptions(req, check.config.Options)
+
 	resp, err := check.config.Client.Do(req)
 	if err != nil {
 		return nil, errors.Errorf("fail to execute '%v' request: %v", check.config.Method, err)
 	}
 
 	return resp, nil
+}
+
+func configureHTTPOptions(req *http.Request, options []RequestOption) {
+	for _, opt := range options {
+		opt(req)
+	}
 }

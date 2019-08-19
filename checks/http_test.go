@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,9 +13,39 @@ import (
 )
 
 const (
-	longRequest     = "LongRequest"
-	expectedContent = "I'm healthy"
+	longRequest       = "LongRequest"
+	expectedContent   = "I'm healthy"
+	testCookieKey     = "test-cookie"
+	expectedCookieVal = "test-cookie-val"
+	testHeaderKey     = "test-header"
+	expectedHeaderVal = "test-value"
 )
+
+type receivedRequest struct {
+	sync.RWMutex
+	details map[string]string
+}
+
+func (req *receivedRequest) addDetail(key string, val string) {
+	if val == "" {
+		return
+	}
+	req.Lock()
+	defer req.Unlock()
+	req.details[key] = val
+}
+
+func (req *receivedRequest) getDetail(key string) string {
+	req.RLock()
+	defer req.RUnlock()
+	return req.details[key]
+}
+
+func (req *receivedRequest) clear() {
+	req.Lock()
+	defer req.Unlock()
+	req.details = make(map[string]string, 2)
+}
 
 func TestNewHttpCheckRequiredFields(t *testing.T) {
 	check, err := NewHTTPCheck(HTTPCheckConfig{
@@ -38,6 +69,8 @@ func TestNewHttpCheckRequiredFields(t *testing.T) {
 }
 
 func TestNewHttpCheck(t *testing.T) {
+	receivedDetails := receivedRequest{}
+
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if strings.Contains(req.URL.String(), longRequest) {
 			waitDuration, err := time.ParseDuration(req.URL.Query().Get("wait"))
@@ -47,6 +80,12 @@ func TestNewHttpCheck(t *testing.T) {
 			}
 
 			time.Sleep(waitDuration)
+		}
+
+		receivedDetails.clear()
+		receivedDetails.addDetail(testHeaderKey, req.Header.Get(testHeaderKey))
+		if cookie, err := req.Cookie(testCookieKey); err == nil {
+			receivedDetails.addDetail(testCookieKey, cookie.Value)
 		}
 
 		rw.WriteHeader(200)
@@ -61,6 +100,7 @@ func TestNewHttpCheck(t *testing.T) {
 	t.Run("HttpCheck success call", testHTTPCheckSuccess(server.URL, server.Client()))
 	t.Run("HttpCheck success call with body check", testHTTPCheckSuccessWithExpectedBody(server.URL, server.Client()))
 	t.Run("HttpCheck success call with failing body check", testHTTPCheckFailWithUnexpectedBody(server.URL, server.Client()))
+	t.Run("HttpCheck success call with options", testHTTPCheckSuccessWithOptions(server.URL, server.Client(), &receivedDetails))
 	t.Run("HttpCheck fail on status code", testHTTPCheckFailStatusCode(server.URL, server.Client()))
 	t.Run("HttpCheck fail on URL", testHTTPCheckFailURL(server.URL, server.Client()))
 	t.Run("HttpCheck fail on timeout", testHTTPCheckFailTimeout(server.URL, server.Client()))
@@ -128,6 +168,32 @@ func testHTTPCheckFailStatusCode(url string, client *http.Client) func(t *testin
 		assert.Error(t, err, "check should fail")
 		assert.Equal(t, "unexpected status code: '200' expected: '300'", err.Error(), "check error message")
 		assert.Equal(t, url, details, "check details when fail are the URL")
+	}
+}
+
+func testHTTPCheckSuccessWithOptions(url string, client *http.Client, rr *receivedRequest) func(t *testing.T) {
+
+	return func(t *testing.T) {
+		check, err := NewHTTPCheck(HTTPCheckConfig{
+			CheckName: "url.check",
+			URL:       url,
+			Client:    client,
+			Options: []RequestOption{
+				func(r *http.Request) {
+					r.Header.Add(testHeaderKey, expectedHeaderVal)
+				},
+				func(r *http.Request) {
+					r.AddCookie(&http.Cookie{Name: testCookieKey, Value: expectedCookieVal})
+				},
+			},
+		})
+		assert.Nil(t, err)
+
+		details, err := check.Execute()
+		assert.Nil(t, err, "check should pass")
+		assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
+		assert.Equal(t, expectedCookieVal, rr.getDetail(testCookieKey))
+		assert.Equal(t, expectedHeaderVal, rr.getDetail(testHeaderKey))
 	}
 }
 
