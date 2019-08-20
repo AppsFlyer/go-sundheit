@@ -54,7 +54,8 @@ func TestNewDialPinger(t *testing.T) {
 
 	pinger := NewDialPinger("tcp", "there.should.be.no.such.host.com:666")
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*2)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
 	assertions.Error(pinger.PingContext(ctx), "expecting a ping error for non existing address")
 
 	pinger = NewDialPinger("tcp", "example.com:80")
