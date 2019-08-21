@@ -118,6 +118,30 @@ h.RegisterCheck(&health.Config{
 })
 ```
 
+#### Ping built-in check(s)
+The ping checks allow you to verifies that a resource is still alive and reachable.
+For example, you can use it as a DB ping check (`sql.DB` implements the Pinger interface):
+```go
+	db, err := sql.Open(...)
+	dbCheck, err := checks.NewPingCheck("db.check", db, time.Millisecond*100)
+	_ = h.RegisterCheck(&health.Config{
+		Check: dbCheck,
+		// ...
+	})
+```
+
+You can also use the ping check to test a generic connection like so:
+```go
+	pinger := checks.NewDialPinger("tcp", "example.com")
+	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger, time.Second)
+	h.RegisterCheck(&health.Config{
+		Check: pingCheck,
+		// ...
+	})
+``` 
+
+The `NewDialPinger` function supports all the network/address parameters supported by the `net.Dial()` function(s)
+
 ### Custom Checks
 The library provides 2 means of defining a custom check.
 The bottom line is that you need an implementation of the `checks.Check` interface:
