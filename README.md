@@ -57,7 +57,10 @@ func main() {
     fmt.Println(err)
     return // your call...
   }
-  
+
+  // Alternatively panic when creating a check fails
+  httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
+
   err = h.RegisterCheck(&health.Config{
     Check:           httpCheck, 
     InitialDelay:    time.Second,      // the check will run once after 1 sec
