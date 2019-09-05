@@ -67,7 +67,7 @@ func main() {
     ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
   })
   
-  if (err != nil) {
+  if err != nil {
     fmt.Println("Failed to register check: ", err)
     return // or whatever
   }
