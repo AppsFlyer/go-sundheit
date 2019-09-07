@@ -1,0 +1,10 @@
+version: 2.1
+  jobs:
+    build:
+      docker: 
+        - image: circleci/golang:1.12 # the primary container, where your job's commands are run
+          environment:
+            GOPROXY: https://proxy.golang.org
+      steps:
+        - checkout # check out the code in the project directory
+        - run: make
