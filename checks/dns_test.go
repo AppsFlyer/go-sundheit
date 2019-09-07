@@ -11,9 +11,9 @@ import (
 )
 
 func TestNewHostResolveCheck(t *testing.T) {
-	check := NewHostResolveCheck("localhost", 10*time.Microsecond, 1)
+	check := NewHostResolveCheck("127.0.0.1", 10*time.Microsecond, 1)
 
-	assert.Equal(t, "resolve.localhost", check.Name(), "check name")
+	assert.Equal(t, "resolve.127.0.0.1", check.Name(), "check name")
 
 	details, err := check.Execute()
 	assert.NoError(t, err, "check execution should succeed")
