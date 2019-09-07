@@ -14,3 +14,5 @@ require (
 	golang.org/x/net v0.0.0-20190313220215-9f648a60d977 // indirect
 	golang.org/x/sys v0.0.0-20190312061237-fead79001313 // indirect
 )
+
+replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
