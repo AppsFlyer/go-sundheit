@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PingContext verifies a resource is still alive.
+// Pinger verifies a resource is still alive.
 // This would normally be a TCP dial check, a db.PingContext() or something similar.
 type Pinger interface {
 	PingContext(ctx context.Context) error
