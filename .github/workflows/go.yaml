@@ -24,4 +24,5 @@ jobs:
         run: go test -v ./...
       - name: Lint
         uses: "actions-contrib/golangci-lint@master"
-        args: "run -E golint -E gosec -E gofmt"
+        with:
+          args: "run -E golint -E gosec -E gofmt"
