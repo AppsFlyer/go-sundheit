@@ -1,8 +1,8 @@
-name: Build and test Go
+name: go-build
 on: [push, pull_request]
 jobs:
   build:
-    name: Build
+    name: build, test, lint
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.12
@@ -22,3 +22,5 @@ jobs:
         env:
           GOPROXY: "https://proxy.golang.org"
         run: go test -v ./...
+      - name: Lint
+        run: make lint
