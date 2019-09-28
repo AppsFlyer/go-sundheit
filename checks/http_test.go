@@ -209,7 +209,7 @@ func testHTTPCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
 
 		details, err := check.Execute()
 		assert.Error(t, err, "check should fail")
-		assert.Contains(t, err.Error(), "no such host", "check error message")
+		assert.Contains(t, err.Error(), "lookup", "check error message")
 		assert.Equal(t, bogusURL, details, "check details when fail are the URL")
 	}
 }
