@@ -15,10 +15,10 @@ jobs:
 
       - name: Build
         env:
-		  GOPROXY: "https://proxy.golang.org"
+          GOPROXY: "https://proxy.golang.org"
         run: go build .
 
       - name: Test
 		env:
-		  GOPROXY: "https://proxy.golang.org"
+          GOPROXY: "https://proxy.golang.org"
         run: go test -v .
