@@ -19,6 +19,6 @@ jobs:
         run: go build .
 
       - name: Test
-		env:
+        env:
           GOPROXY: "https://proxy.golang.org"
         run: go test -v .
