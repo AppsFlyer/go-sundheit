@@ -3,6 +3,7 @@ language: go
 go:
   - 1.11.x
   - 1.12.x
+  - 1.13.x
 
 before_install:
   - go get github.com/mattn/goveralls
@@ -14,4 +15,4 @@ script:
   - make
 #  - make testflags="-race"
   # submit to goveralls only on the latest version to avoid timeouts
-  - if [[ $TRAVIS_GO_VERSION == 1.12* ]]; then $GOPATH/bin/goveralls -service=travis-ci; fi
+  - if [[ $TRAVIS_GO_VERSION == 1.13* ]]; then $GOPATH/bin/goveralls -service=travis-ci; fi
