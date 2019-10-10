@@ -8,7 +8,7 @@ build:
 	go build -v
 
 $(GOLANGCI_LINT):
-	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.16.0
+	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.20.0
 
 lint: $(GOLANGCI_LINT)
 	##### linting #####
