@@ -42,7 +42,7 @@ import (
 func main() {
   // create a new health instance
   h := health.New()
-  
+
   // define an HTTP dependency check
   httpCheckConf := checks.HTTPCheckConfig{
     CheckName: "httpbin.url.check",
@@ -327,4 +327,69 @@ h := health.New()
 view.Register(health.DefaultHealthViews...)
 // or register individual views. For example:
 view.Register(health.ViewCheckExecutionTime, health.ViewCheckStatusByName, ...)
+```
+
+## Controlling log output with `WithLogger`
+By default go-sundheit uses a simple wrapper around the default go logger `"log"`.
+To control log levels, provide structured logging and use your own logger you may set your own logger by invoking  `WithLogger` as demonstrated below.
+
+WithLogger expects a logger with the type signature defined at `log/logger.go`, namely the functions `Debug`/`Info`/`Warn`,`Error` and `WithLevel`. If you are already using https://github.com/AppsFlyer/go-logger then a simple shim can be created to satisfy the type required by `WithLogger`
+
+```go
+import (
+	healthlog "github.com/AppsFlyer/go-sundheit/log"
+    aflog "github.com/appsflyer/go-logger"
+)
+
+
+func ToGoSundheitLogger(l aflog.Logger) healthlog.Logger {
+	return &healthlogShim{l}
+}
+
+type healthlogShim struct {
+	aflog.Logger
+}
+
+func (s *healthlogShim) WithFields(fields healthlog.Fields) healthlog.Logger {
+	return healthlog.Logger(&healthlogShim{s.Logger.WithFields(aflog.Fields(fields))})
+}
+
+```
+
+If you are not using go-logger then you will have to create another shim, as the following example using zerolog:
+
+```go
+import (
+	"fmt"
+
+	healthlog "github.com/AppsFlyer/go-sundheit/log"
+	"github.com/rs/zerolog"
+)
+
+func ToHealthLogger(l zerolog.Logger) healthlog.Logger {
+	return &healthlogShim{l}
+}
+
+type healthlogShim struct {
+	zerolog.Logger
+}
+
+func (s *healthlogShim) Debug(msg ...interface{}) {
+	s.Logger.Debug().Msg(fmt.Sprint(msg...))
+}
+func (s *healthlogShim) Info(msg ...interface{}) {
+	s.Logger.Info().Msg(fmt.Sprint(msg...))
+}
+func (s *healthlogShim) Warn(msg ...interface{}) {
+	s.Logger.Warn().Msg(fmt.Sprint(msg...))
+}
+func (s *healthlogShim) Error(msg ...interface{}) {
+	s.Logger.Error().Msg(fmt.Sprint(msg...))
+}
+
+func (s *healthlogShim) WithFields(fields healthlog.Fields) healthlog.Logger {
+	return healthlog.Logger(&healthlogShim{
+		s.Logger.With().Fields(fields).Logger(),
+	})
+}
 ```

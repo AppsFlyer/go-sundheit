@@ -12,7 +12,7 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/AppsFlyer/go-sundheit/checks"
-	"github.com/InVisionApp/go-logger"
+	"github.com/AppsFlyer/go-sundheit/log"
 	"github.com/pkg/errors"
 )
 
