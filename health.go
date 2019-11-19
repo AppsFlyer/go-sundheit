@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/AppsFlyer/go-sundheit/checks"
-	"github.com/InVisionApp/go-logger"
 	"github.com/pkg/errors"
 )
 
@@ -80,8 +80,18 @@ type Health interface {
 	// DeregisterAll Deregister removes all health checks from this instance, and stops their next executions.
 	// It is equivalent of calling Deregister() for each currently registered check.
 	DeregisterAll()
-	// WithLogger allows you to change the logging implementation, defaults to standard logging
-	WithLogger(logger log.Logger)
+	// WithCheckListener allows you to listen to check start/end events
+	WithCheckListener(listener CheckListener)
+}
+
+// CheckListener can be used to gain check stats or log check transitions
+type CheckListener interface {
+	// CheckStarted is called when a check with the specified name has started
+	CheckStarted(name string)
+
+	// CheckCompleted is called when the check with the specified name has completed it's execution.
+	// The results are passed as an argument
+	CheckCompleted(name string, result Result)
 }
 
 // Config defines a health Check and it's scheduling timing requirements.
@@ -96,35 +106,26 @@ type Config struct {
 	InitiallyPassing bool
 }
 
-// Result represents the output of a health check execution.
-type Result interface {
-	fmt.Stringer
-	// IsHealthy returns true iff the corresponding health check has passed
-	IsHealthy() bool
-}
-
 // New returns a new Health instance.
 func New() Health {
 	return &health{
-		logger:     log.NewSimple(),
-		results:    make(map[string]*result, maxExpectedChecks),
-		checkTasks: make(map[string]checkTask, maxExpectedChecks),
-		lock:       sync.RWMutex{},
+		checksListener: noopCheckListener{},
+		results:        make(map[string]Result, maxExpectedChecks),
+		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
+		lock:           sync.RWMutex{},
 	}
 }
 
 type health struct {
-	logger     log.Logger
-	results    map[string]*result
-	checkTasks map[string]checkTask
-	lock       sync.RWMutex
+	checksListener CheckListener
+	results        map[string]Result
+	checkTasks     map[string]checkTask
+	lock           sync.RWMutex
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
 	if cfg.Check == nil || cfg.Check.Name() == "" {
-		err := errors.Errorf("misconfigured check %v", cfg.Check)
-		h.logger.Error(err)
-		return err
+		return errors.Errorf("misconfigured check %v", cfg.Check)
 	}
 
 	// checks are initially failing by default, but we allow overrides...
@@ -145,7 +146,6 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 	task := checkTask{
 		stopChan: make(chan bool, 1),
 		check:    cfg.Check,
-		logger:   h.logger.WithFields(log.Fields{"check": cfg.Check.Name()}),
 	}
 	h.checkTasks[cfg.Check.Name()] = task
 
@@ -156,7 +156,6 @@ type checkTask struct {
 	stopChan chan bool
 	ticker   *time.Ticker
 	check    checks.Check
-	logger   log.Logger
 }
 
 func (t *checkTask) stop() {
@@ -166,13 +165,9 @@ func (t *checkTask) stop() {
 }
 
 func (t *checkTask) execute() (details interface{}, duration time.Duration, err error) {
-	t.logger.Debug("Running check task")
 	startTime := time.Now()
 	details, err = t.check.Execute()
 	duration = time.Since(startTime)
-	if err != nil {
-		t.logger.WithFields(log.Fields{"error": err}).Error("Check failed")
-	}
 
 	return
 }
@@ -182,13 +177,11 @@ func (h *health) stopCheckTask(name string) {
 	defer h.lock.Unlock()
 
 	task := h.checkTasks[name]
-	task.logger.Debug("Cleaning check task")
 
 	task.stop()
 
 	delete(h.results, name)
 	delete(h.checkTasks, name)
-	task.logger.Info("Check task stopped")
 }
 
 func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
@@ -220,13 +213,13 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
+	h.checksListener.CheckStarted(task.check.Name())
 	details, duration, err := task.execute()
-	h.updateResult(task.check.Name(), details, duration, err, checkTime)
+	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
+	h.checksListener.CheckCompleted(task.check.Name(), result)
 }
 
 func (h *health) Deregister(name string) {
-	h.logger.WithFields(log.Fields{"check": name}).Debug("Stopping check task")
-
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -238,8 +231,6 @@ func (h *health) Deregister(name string) {
 }
 
 func (h *health) DeregisterAll() {
-	h.logger.Info("Stopping health instance")
-
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -249,7 +240,7 @@ func (h *health) DeregisterAll() {
 }
 
 func (h *health) Results() (results map[string]Result, healthy bool) {
-	results = make(map[string]Result)
+	results = make(map[string]Result, len(h.results))
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
@@ -269,7 +260,7 @@ func (h *health) IsHealthy() (healthy bool) {
 	return allHealthy(h.results)
 }
 
-func allHealthy(results map[string]*result) (healthy bool) {
+func allHealthy(results map[string]Result) (healthy bool) {
 	for _, v := range results {
 		if !v.IsHealthy() {
 			return false
@@ -279,12 +270,12 @@ func allHealthy(results map[string]*result) (healthy bool) {
 	return true
 }
 
-func (h *health) updateResult(name string, details interface{}, checkDuration time.Duration, err error, t time.Time) {
+func (h *health) updateResult(name string, details interface{}, checkDuration time.Duration, err error, t time.Time) (result Result) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	prevResult, ok := h.results[name]
-	result := &result{
+	result = Result{
 		Details:            details,
 		Error:              newMarshalableError(err),
 		Timestamp:          t,
@@ -308,9 +299,11 @@ func (h *health) updateResult(name string, details interface{}, checkDuration ti
 
 	h.results[name] = result
 	h.recordStats(name, result)
+
+	return result
 }
 
-func (h *health) recordStats(checkName string, result *result) {
+func (h *health) recordStats(checkName string, result Result) {
 	thisCheckCtx := h.createMonitoringCtx(checkName, result.IsHealthy())
 	stats.Record(thisCheckCtx, mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
 	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
@@ -323,20 +316,21 @@ func (h *health) recordStats(checkName string, result *result) {
 func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx context.Context) {
 	ctx, err := tag.New(context.Background(), tag.Insert(keyCheck, checkName), tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)))
 	if err != nil {
-		h.logger.WithFields(log.Fields{"error": err}).Error("context creation failed")
+		log.Println("[Error] context creation failed for check ", checkName)
 	}
 
 	return
 }
 
-func (h *health) WithLogger(logger log.Logger) {
-	if logger != nil {
-		h.logger = logger
+func (h *health) WithCheckListener(listener CheckListener) {
+	if listener != nil {
+		h.checksListener = listener
 	}
 }
 
-type result struct {
-	// the details of task result - may be nil
+// Result represents the output of a health check execution.
+type Result struct {
+	// the details of task Result - may be nil
 	Details interface{} `json:"message,omitempty"`
 	// the error returned from a failed health check - nil when successful
 	Error error `json:"error,omitempty"`
@@ -350,11 +344,11 @@ type result struct {
 	TimeOfFirstFailure *time.Time `json:"timeOfFirstFailure"`
 }
 
-func (r *result) IsHealthy() bool {
+func (r Result) IsHealthy() bool {
 	return r.Error == nil
 }
 
-func (r *result) String() string {
+func (r Result) String() string {
 	return fmt.Sprintf("Result{details: %s, err: %s, time: %s, contiguousFailures: %d, timeOfFirstFailure:%s}",
 		r.Details, r.Error, r.Timestamp, r.ContiguousFailures, r.TimeOfFirstFailure)
 }
@@ -393,3 +387,9 @@ func newMarshalableError(err error) error {
 func (e *marshalableError) Error() string {
 	return e.Message
 }
+
+type noopCheckListener struct{}
+
+func (noop noopCheckListener) CheckStarted(name string) {}
+
+func (noop noopCheckListener) CheckCompleted(name string, res Result) {}
