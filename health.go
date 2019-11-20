@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
 	"github.com/AppsFlyer/go-sundheit/checks"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -84,14 +84,15 @@ type Health interface {
 	WithCheckListener(listener CheckListener)
 }
 
-// CheckListener can be used to gain check stats or log check transitions
+// CheckListener can be used to gain check stats or log check transitions.
+// Implementations of this interface **must not block**
 type CheckListener interface {
-	// CheckStarted is called when a check with the specified name has started
-	CheckStarted(name string)
+	// OnCheckStarted is called when a check with the specified name has started
+	OnCheckStarted(name string)
 
-	// CheckCompleted is called when the check with the specified name has completed it's execution.
+	// OnCheckCompleted is called when the check with the specified name has completed it's execution.
 	// The results are passed as an argument
-	CheckCompleted(name string, result Result)
+	OnCheckCompleted(name string, result Result)
 }
 
 // Config defines a health Check and it's scheduling timing requirements.
@@ -117,9 +118,9 @@ func New() Health {
 }
 
 type health struct {
-	checksListener CheckListener
 	results        map[string]Result
 	checkTasks     map[string]checkTask
+	checksListener CheckListener
 	lock           sync.RWMutex
 }
 
@@ -213,10 +214,10 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
-	h.checksListener.CheckStarted(task.check.Name())
+	h.checksListener.OnCheckStarted(task.check.Name())
 	details, duration, err := task.execute()
 	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
-	h.checksListener.CheckCompleted(task.check.Name(), result)
+	h.checksListener.OnCheckCompleted(task.check.Name(), result)
 }
 
 func (h *health) Deregister(name string) {
@@ -270,7 +271,9 @@ func allHealthy(results map[string]Result) (healthy bool) {
 	return true
 }
 
-func (h *health) updateResult(name string, details interface{}, checkDuration time.Duration, err error, t time.Time) (result Result) {
+func (h *health) updateResult(
+	name string, details interface{}, checkDuration time.Duration, err error, t time.Time) (result Result) {
+
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -316,6 +319,7 @@ func (h *health) recordStats(checkName string, result Result) {
 func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx context.Context) {
 	ctx, err := tag.New(context.Background(), tag.Insert(keyCheck, checkName), tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)))
 	if err != nil {
+		// When this happens it's a programming error caused by the line above
 		log.Println("[Error] context creation failed for check ", checkName)
 	}
 
@@ -390,6 +394,9 @@ func (e *marshalableError) Error() string {
 
 type noopCheckListener struct{}
 
-func (noop noopCheckListener) CheckStarted(name string) {}
+func (noop noopCheckListener) OnCheckStarted(name string) {}
 
-func (noop noopCheckListener) CheckCompleted(name string, res Result) {}
+func (noop noopCheckListener) OnCheckCompleted(name string, res Result) {}
+
+// make sure noopCheckListener implements the CheckListener interface
+var _ CheckListener = noopCheckListener{}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -182,6 +183,57 @@ func TestHealthMetrics(t *testing.T) {
 	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
 	assert.Equal(t, int64(2), checksTimeData[passingCheckName].(*view.DistributionData).Count, "passing check timing measurement count")
 	assert.Equal(t, int64(2), checksTimeData[failingCheckName].(*view.DistributionData).Count, "failing check timing measurement count")
+}
+
+func TestCheckListener(t *testing.T) {
+	h := New()
+
+	listenerMock := &checkListenerMock{}
+	listenerMock.On("OnCheckStarted", failingCheckName).Return()
+	listenerMock.On("OnCheckStarted", passingCheckName).Return()
+	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
+	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
+	h.WithCheckListener(listenerMock)
+
+	registerCheck(h, failingCheckName, false, false)
+	registerCheck(h, passingCheckName, true, false)
+	defer h.DeregisterAll()
+
+	// await first execution
+	time.Sleep(21 * time.Millisecond)
+
+	listenerMock.AssertExpectations(t)
+	assert.Equal(t, 2, len(listenerMock.completed), "num completed checks")
+	for _, c := range listenerMock.completed {
+		if c.name == failingCheckName {
+			assert.False(t, c.res.IsHealthy())
+			assert.Error(t, c.res.Error)
+			assert.Equal(t, "failed; i=1", c.res.Details)
+		} else {
+			assert.True(t, c.res.IsHealthy())
+			assert.NoError(t, c.res.Error)
+			assert.Equal(t, "success; i=1", c.res.Details)
+		}
+	}
+}
+
+type checkListenerMock struct {
+	mock.Mock
+	completed []completedCheck
+}
+
+type completedCheck struct {
+	name string
+	res  Result
+}
+
+func (l *checkListenerMock) OnCheckStarted(name string) {
+	l.Called(name)
+}
+
+func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
+	l.Called(name, res)
+	l.completed = append(l.completed, completedCheck{name, res})
 }
 
 func simplifyRows(viewName string) (check2data map[string]view.AggregationData) {
