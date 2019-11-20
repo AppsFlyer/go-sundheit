@@ -85,7 +85,10 @@ type Health interface {
 }
 
 // CheckListener can be used to gain check stats or log check transitions.
-// Implementations of this interface **must not block**
+// Implementations of this interface **must not block!**
+// If an implementation blocks, it may result in delayed execution of other health checks down the line.
+// It's OK to log in the implementation and it's OK to add metrics, but it's not OK to run anything that
+// takes long time to complete such as network IO etc.
 type CheckListener interface {
 	// OnCheckStarted is called when a check with the specified name has started
 	OnCheckStarted(name string)

@@ -302,11 +302,11 @@ The `short` response type is suitable for the consul health checks / LB heath ch
 The response code is `200` when the tests pass, and `503` when they fail.
 
 ### CheckListener
-It is sometimes desired to keep track on checks execution and apply custom logic.
+It is sometimes desired to keep track of checks execution and apply custom logic.
 For example, you may want to add logging, or external metrics to your checks, 
 or add some trigger some recovery logic when a check fails after 3 consecutive times.
 
-The `health.CheckListener` interface allows you to do hook this custom logic.
+The `health.CheckListener` interface allows you to hook this custom logic.
 
 For example, lets add a logging listener to our health repository:
 ```go
@@ -321,7 +321,7 @@ func (l checkEventsLogger) OnCheckCompleted(name string, res health.Result) {
 }
 ```
 
-Please note that your `CheckListener` implementation must not block!  the
+Please note that your `CheckListener` implementation must not block!
 
 ## Metrics
 The library exposes the following OpenCensus view for your convenience:
