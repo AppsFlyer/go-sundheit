@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -203,8 +204,11 @@ func TestCheckListener(t *testing.T) {
 	time.Sleep(21 * time.Millisecond)
 
 	listenerMock.AssertExpectations(t)
-	assert.Equal(t, 2, len(listenerMock.completed), "num completed checks")
-	for _, c := range listenerMock.completed {
+
+	completedChecks := listenerMock.getCompletedChecks()
+	assert.Equal(t, 2, len(completedChecks), "num completed checks")
+
+	for _, c := range completedChecks {
 		if c.name == failingCheckName {
 			assert.False(t, c.res.IsHealthy())
 			assert.Error(t, c.res.Error)
@@ -217,9 +221,17 @@ func TestCheckListener(t *testing.T) {
 	}
 }
 
+func (l *checkListenerMock) getCompletedChecks() []completedCheck {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	return l.completed
+}
+
 type checkListenerMock struct {
 	mock.Mock
 	completed []completedCheck
+	lock      sync.RWMutex
 }
 
 type completedCheck struct {
@@ -232,6 +244,9 @@ func (l *checkListenerMock) OnCheckStarted(name string) {
 }
 
 func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	l.Called(name, res)
 	l.completed = append(l.completed, completedCheck{name, res})
 }
