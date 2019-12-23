@@ -222,8 +222,8 @@ func TestCheckListener(t *testing.T) {
 }
 
 func (l *checkListenerMock) getCompletedChecks() []completedCheck {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.lock.RLock()
+	defer l.lock.RUnlock()
 
 	return l.completed
 }
