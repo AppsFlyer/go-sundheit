@@ -201,7 +201,7 @@ func TestCheckListener(t *testing.T) {
 	defer h.DeregisterAll()
 
 	// await first execution
-	time.Sleep(21 * time.Millisecond)
+	time.Sleep(25 * time.Millisecond)
 
 	listenerMock.AssertExpectations(t)
 
