@@ -244,9 +244,10 @@ func (h *health) DeregisterAll() {
 }
 
 func (h *health) Results() (results map[string]Result, healthy bool) {
-	results = make(map[string]Result, len(h.results))
 	h.lock.RLock()
 	defer h.lock.RUnlock()
+
+	results = make(map[string]Result, len(h.results))
 
 	healthy = true
 	for k, v := range h.results {
