@@ -62,9 +62,9 @@ func TestRegisterDeregister(t *testing.T) {
 
 	h := New()
 
-	registerCheck(h, failingCheckName, false, false)
-	registerCheck(h, passingCheckName, true, false)
-	registerCheck(h, initiallyPassingCheckName, true, true)
+	registerCheck(h, failingCheckName, false, false, noopCheckListener{})
+	registerCheck(h, passingCheckName, true, false, noopCheckListener{})
+	registerCheck(h, initiallyPassingCheckName, true, true, noopCheckListener{})
 
 	assert.False(t, h.IsHealthy(), "health after registration before first run")
 	results, healthy := h.Results()
@@ -132,7 +132,7 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Empty(t, results, "results after stop")
 }
 
-func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
+func registerCheck(h Health, name string, passing bool, initiallyPassing bool, listener CheckListener) {
 	i := 0
 	checkFunc := func() (details interface{}, err error) {
 		i++
@@ -152,6 +152,7 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 		InitialDelay:     20 * time.Millisecond,
 		ExecutionPeriod:  20 * time.Millisecond,
 		InitiallyPassing: initiallyPassing,
+		Listener:         listener,
 	})
 }
 
@@ -159,8 +160,8 @@ func TestHealthMetrics(t *testing.T) {
 	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
 
 	h := New()
-	registerCheck(h, failingCheckName, false, false)
-	registerCheck(h, passingCheckName, true, false)
+	registerCheck(h, failingCheckName, false, false, noopCheckListener{})
+	registerCheck(h, passingCheckName, true, false, noopCheckListener{})
 	defer h.DeregisterAll()
 
 	// await first execution
@@ -190,14 +191,10 @@ func TestCheckListener(t *testing.T) {
 	h := New()
 
 	listenerMock := &checkListenerMock{}
-	listenerMock.On("OnCheckStarted", failingCheckName).Return()
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
-	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h.WithCheckListener(listenerMock)
 
-	registerCheck(h, failingCheckName, false, false)
-	registerCheck(h, passingCheckName, true, false)
+	registerCheck(h, passingCheckName, false, false, listenerMock)
 	defer h.DeregisterAll()
 
 	// await first execution
@@ -206,18 +203,12 @@ func TestCheckListener(t *testing.T) {
 	listenerMock.AssertExpectations(t)
 
 	completedChecks := listenerMock.getCompletedChecks()
-	assert.Equal(t, 2, len(completedChecks), "num completed checks")
+	assert.Equal(t, 1, len(completedChecks), "num failing completed checks")
 
 	for _, c := range completedChecks {
-		if c.name == failingCheckName {
-			assert.False(t, c.res.IsHealthy())
-			assert.Error(t, c.res.Error)
-			assert.Equal(t, "failed; i=1", c.res.Details)
-		} else {
-			assert.True(t, c.res.IsHealthy())
-			assert.NoError(t, c.res.Error)
-			assert.Equal(t, "success; i=1", c.res.Details)
-		}
+		assert.False(t, c.res.IsHealthy())
+		assert.Error(t, c.res.Error)
+		assert.Equal(t, "failed; i=1", c.res.Details)
 	}
 }
 

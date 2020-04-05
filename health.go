@@ -80,8 +80,6 @@ type Health interface {
 	// DeregisterAll Deregister removes all health checks from this instance, and stops their next executions.
 	// It is equivalent of calling Deregister() for each currently registered check.
 	DeregisterAll()
-	// WithCheckListener allows you to listen to check start/end events
-	WithCheckListener(listener CheckListener)
 }
 
 // CheckListener can be used to gain check stats or log check transitions.
@@ -102,6 +100,8 @@ type CheckListener interface {
 type Config struct {
 	// Check is the health Check to be scheduled for execution.
 	Check checks.Check
+	// Listener allows you to listen to check start/end events.
+	Listener CheckListener
 	// ExecutionPeriod is the period between successive executions.
 	ExecutionPeriod time.Duration
 	// InitialDelay is the time to delay first execution; defaults to zero.
@@ -113,23 +113,25 @@ type Config struct {
 // New returns a new Health instance.
 func New() Health {
 	return &health{
-		checksListener: noopCheckListener{},
-		results:        make(map[string]Result, maxExpectedChecks),
-		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
-		lock:           sync.RWMutex{},
+		results:    make(map[string]Result, maxExpectedChecks),
+		checkTasks: make(map[string]checkTask, maxExpectedChecks),
+		lock:       sync.RWMutex{},
 	}
 }
 
 type health struct {
-	results        map[string]Result
-	checkTasks     map[string]checkTask
-	checksListener CheckListener
-	lock           sync.RWMutex
+	results    map[string]Result
+	checkTasks map[string]checkTask
+	lock       sync.RWMutex
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
 	if cfg.Check == nil || cfg.Check.Name() == "" {
 		return errors.Errorf("misconfigured check %v", cfg.Check)
+	}
+
+	if cfg.Listener == nil {
+		cfg.Listener = noopCheckListener{}
 	}
 
 	// checks are initially failing by default, but we allow overrides...
@@ -150,6 +152,7 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 	task := checkTask{
 		stopChan: make(chan bool, 1),
 		check:    cfg.Check,
+		listener: cfg.Listener,
 	}
 	h.checkTasks[cfg.Check.Name()] = task
 
@@ -160,6 +163,7 @@ type checkTask struct {
 	stopChan chan bool
 	ticker   *time.Ticker
 	check    checks.Check
+	listener CheckListener
 }
 
 func (t *checkTask) stop() {
@@ -217,10 +221,10 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
-	h.checksListener.OnCheckStarted(task.check.Name())
+	task.listener.OnCheckStarted(task.check.Name())
 	details, duration, err := task.execute()
 	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
-	h.checksListener.OnCheckCompleted(task.check.Name(), result)
+	task.listener.OnCheckCompleted(task.check.Name(), result)
 }
 
 func (h *health) Deregister(name string) {
@@ -328,12 +332,6 @@ func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx cont
 	}
 
 	return
-}
-
-func (h *health) WithCheckListener(listener CheckListener) {
-	if listener != nil {
-		h.checksListener = listener
-	}
 }
 
 // Result represents the output of a health check execution.

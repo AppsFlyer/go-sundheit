@@ -309,7 +309,7 @@ or add some trigger some recovery logic when a check fails after 3 consecutive t
 
 The `health.CheckListener` interface allows you to hook this custom logic.
 
-For example, lets add a logging listener to our health repository:
+For example, lets add a logging listener to one of checks in our health repository:
 ```go
 type checkEventsLogger struct{}
 
@@ -320,6 +320,14 @@ func (l checkEventsLogger) OnCheckStarted(name string) {
 func (l checkEventsLogger) OnCheckCompleted(name string, res health.Result) {
 	log.Printf("Check %q completed with result: %v\n", name, res)
 }
+...
+
+err := h.RegisterCheck(&Config{
+	Check:           check,
+	InitialDelay:    time.Second,      // the check will run once after 1 sec
+	ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
+	Listener:        checkEventsLogger{}, //listener will registered for this check
+})
 ```
 
 Please note that your `CheckListener` implementation must not block!
