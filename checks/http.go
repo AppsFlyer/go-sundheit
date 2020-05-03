@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,6 +43,7 @@ type RequestOption func(r *http.Request)
 
 type httpCheck struct {
 	config         *HTTPCheckConfig
+	payload        []byte
 	successDetails string
 }
 
@@ -64,6 +66,13 @@ func NewHTTPCheck(config HTTPCheckConfig) (check Check, err error) {
 	if config.Method == "" {
 		config.Method = http.MethodGet
 	}
+	var payload []byte
+	if config.Body != nil {
+		payload, err = ioutil.ReadAll(config.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read body")
+		}
+	}
 	if config.Timeout == 0 {
 		config.Timeout = time.Second
 	}
@@ -74,6 +83,7 @@ func NewHTTPCheck(config HTTPCheckConfig) (check Check, err error) {
 
 	check = &httpCheck{
 		config:         &config,
+		payload:        payload,
 		successDetails: fmt.Sprintf("URL [%s] is accessible", config.URL),
 	}
 	return check, nil
@@ -114,7 +124,7 @@ func (check *httpCheck) Execute() (details interface{}, err error) {
 // fetchURL executes the HTTP request to the target URL, and returns a `http.Response`, error.
 // It is the callers responsibility to close the response body
 func (check *httpCheck) fetchURL() (*http.Response, error) {
-	req, err := http.NewRequest(check.config.Method, check.config.URL, check.config.Body)
+	req, err := http.NewRequest(check.config.Method, check.config.URL, bytes.NewBuffer(check.payload))
 	if err != nil {
 		return nil, errors.Errorf("unable to create check HTTP request: %v", err)
 	}
