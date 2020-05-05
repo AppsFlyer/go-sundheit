@@ -2,6 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -89,7 +91,14 @@ func TestNewHttpCheck(t *testing.T) {
 		}
 
 		rw.WriteHeader(200)
-		_, err := rw.Write([]byte(expectedContent))
+
+		reqBody, _ := ioutil.ReadAll(req.Body)
+		responsePayload := expectedContent
+		if len(reqBody) != 0 {
+			responsePayload = string(reqBody)
+		}
+
+		_, err := rw.Write([]byte(responsePayload))
 		if err != nil {
 			t.Fatal("Failed to write response: ", err)
 		}
@@ -98,8 +107,9 @@ func TestNewHttpCheck(t *testing.T) {
 	defer server.Close()
 
 	t.Run("HttpCheck success call", testHTTPCheckSuccess(server.URL, server.Client()))
-	t.Run("HttpCheck success call with body check", testHTTPCheckSuccessWithExpectedBody(server.URL, server.Client()))
-	t.Run("HttpCheck success call with failing body check", testHTTPCheckFailWithUnexpectedBody(server.URL, server.Client()))
+	t.Run("HttpCheck success call with expected body check", testHTTPCheckSuccessWithExpectedBody(server.URL, server.Client()))
+	t.Run("HttpCheck success call with POST body payload", testHTTPCheckSuccessWithPostBodyPayload(server.URL, server.Client()))
+	t.Run("HttpCheck success call with failing expected body check", testHTTPCheckFailWithUnexpectedBody(server.URL, server.Client()))
 	t.Run("HttpCheck success call with options", testHTTPCheckSuccessWithOptions(server.URL, server.Client(), &receivedDetails))
 	t.Run("HttpCheck fail on status code", testHTTPCheckFailStatusCode(server.URL, server.Client()))
 	t.Run("HttpCheck fail on URL", testHTTPCheckFailURL(server.URL, server.Client()))
@@ -134,6 +144,28 @@ func testHTTPCheckSuccessWithExpectedBody(url string, client *http.Client) func(
 		details, err := check.Execute()
 		assert.Nil(t, err, "check should pass")
 		assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
+	}
+}
+
+func testHTTPCheckSuccessWithPostBodyPayload(url string, client *http.Client) func(t *testing.T) {
+	return func(t *testing.T) {
+		const postPayload = "body-payload"
+
+		check, err := NewHTTPCheck(HTTPCheckConfig{
+			CheckName:    "url.check",
+			URL:          url,
+			Client:       client,
+			ExpectedBody: postPayload,
+			Body:         func() io.Reader { return strings.NewReader(postPayload) },
+			Method:       http.MethodPost,
+		})
+		assert.Nil(t, err)
+
+		for i := 0; i < 5; i++ {
+			details, err := check.Execute()
+			assert.Nil(t, err, "check should pass")
+			assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
+		}
 	}
 }
 
