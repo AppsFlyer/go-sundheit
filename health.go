@@ -352,6 +352,7 @@ type Result struct {
 	TimeOfFirstFailure *time.Time `json:"timeOfFirstFailure"`
 }
 
+// IsHealthy returns true iff the check result snapshot was a success
 func (r Result) IsHealthy() bool {
 	return r.Error == nil
 }
@@ -398,9 +399,9 @@ func (e *marshalableError) Error() string {
 
 type noopCheckListener struct{}
 
-func (noop noopCheckListener) OnCheckStarted(name string) {}
+func (noop noopCheckListener) OnCheckStarted(_ string) {}
 
-func (noop noopCheckListener) OnCheckCompleted(name string, res Result) {}
+func (noop noopCheckListener) OnCheckCompleted(_ string, _ Result) {}
 
 // make sure noopCheckListener implements the CheckListener interface
 var _ CheckListener = noopCheckListener{}
