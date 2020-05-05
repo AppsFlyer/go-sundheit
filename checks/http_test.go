@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -155,7 +156,7 @@ func testHTTPCheckSuccessWithPostBodyPayload(url string, client *http.Client) fu
 			URL:          url,
 			Client:       client,
 			ExpectedBody: postPayload,
-			Body:         strings.NewReader(postPayload),
+			Body:         func() io.Reader { return strings.NewReader(postPayload) },
 			Method:       http.MethodPost,
 		})
 		assert.Nil(t, err)
