@@ -43,7 +43,7 @@ import (
 
 func main() {
   // create a new health instance
-  h := health.New()
+  h := gosundheit.New()
   
   // define an HTTP dependency check
   httpCheckConf := checks.HTTPCheckConfig{
@@ -64,7 +64,7 @@ func main() {
   // Alternatively panic when creating a check fails
   httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
 
-  err = h.RegisterCheck(&health.Config{
+  err = h.RegisterCheck(&gosundheit.Config{
     Check:           httpCheck, 
     InitialDelay:    time.Second,      // the check will run once after 1 sec
     ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
@@ -101,7 +101,7 @@ and validate that it resolves to at least the minimum number of required results
 Creating a host lookup check is easy:
 ```go
 // Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
-h.RegisterCheck(&health.Config{
+h.RegisterCheck(&gosundheit.Config{
   Check:           checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
   ExecutionPeriod: 10 * time.Second,
 })
@@ -118,7 +118,7 @@ func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err e
 
 //...
 
-h.RegisterCheck(&health.Config{
+h.RegisterCheck(&gosundheit.Config{
   Check:           checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
   ExecutionPeriod: 10 * time.Second,
 })
@@ -130,7 +130,7 @@ For example, you can use it as a DB ping check (`sql.DB` implements the Pinger i
 ```go
 	db, err := sql.Open(...)
 	dbCheck, err := checks.NewPingCheck("db.check", db, time.Millisecond*100)
-	_ = h.RegisterCheck(&health.Config{
+	_ = h.RegisterCheck(&gosundheit.Config{
 		Check: dbCheck,
 		// ...
 	})
@@ -140,7 +140,7 @@ You can also use the ping check to test a generic connection like so:
 ```go
 	pinger := checks.NewDialPinger("tcp", "example.com")
 	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger, time.Second)
-	h.RegisterCheck(&health.Config{
+	h.RegisterCheck(&gosundheit.Config{
 		Check: pingCheck,
 		// ...
 	})
@@ -182,10 +182,10 @@ func lotteryCheck() (details interface{}, err error) {
 
 Now we register the check to start running right away, and execute once per 2 minutes:
 ```go
-h := health.New()
+h := gosundheit.New()
 ...
 
-h.RegisterCheck(&health.Config{
+h.RegisterCheck(&gosundheit.Config{
   Check: &checks.CustomCheck{
     CheckName: "lottery.check",
     CheckFunc: lotteryCheck,
@@ -223,10 +223,10 @@ func (l Lottery) Name() string {
 
 And register our custom check, scheduling it to run after 1 sec, and every 30 sec:
 ```go
-h := health.New()
+h := gosundheit.New()
 ...
 
-h.RegisterCheck(&health.Config{
+h.RegisterCheck(&gosundheit.Config{
   Check: Lottery{myname: "custom.lottery.check", probability:0.3,},
   InitialDelay: 1*time.Second,
   ExecutionPeriod: 30*time.Second,
@@ -318,7 +318,7 @@ func (l checkEventsLogger) OnCheckStarted(name string) {
 	log.Printf("Check %q started...\n", name)
 }
 
-func (l checkEventsLogger) OnCheckCompleted(name string, res health.Result) {
+func (l checkEventsLogger) OnCheckCompleted(name string, res gosundheit.Result) {
 	log.Printf("Check %q completed with result: %v\n", name, res)
 }
 ```
@@ -346,9 +346,9 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
-h := health.New()
+h := gosundheit.New()
 // ...
-view.Register(health.DefaultHealthViews...)
+view.Register(gosundheit.DefaultHealthViews...)
 // or register individual views. For example:
-view.Register(health.ViewCheckExecutionTime, health.ViewCheckStatusByName, ...)
+view.Register(gosundheit.ViewCheckExecutionTime, gosundheit.ViewCheckStatusByName, ...)
 ```
