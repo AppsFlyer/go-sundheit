@@ -1,5 +1,7 @@
 package gosundheit
 
+import "github.com/AppsFlyer/go-sundheit/internal/types"
+
 // CheckListener can be used to gain check stats or log check transitions.
 // Implementations of this interface **must not block!**
 // If an implementation blocks, it may result in delayed execution of other health checks down the line.
@@ -11,14 +13,14 @@ type CheckListener interface {
 
 	// OnCheckCompleted is called when the check with the specified name has completed it's execution.
 	// The results are passed as an argument
-	OnCheckCompleted(name string, result Result)
+	OnCheckCompleted(name string, result types.Result)
 }
 
 type noopCheckListener struct{}
 
 func (noop noopCheckListener) OnCheckStarted(_ string) {}
 
-func (noop noopCheckListener) OnCheckCompleted(_ string, _ Result) {}
+func (noop noopCheckListener) OnCheckCompleted(_ string, _ types.Result) {}
 
 // make sure noopCheckListener implements the CheckListener interface
 var _ CheckListener = noopCheckListener{}

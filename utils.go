@@ -1,6 +1,8 @@
 package gosundheit
 
-func allHealthy(results map[string]Result) (healthy bool) {
+import "github.com/AppsFlyer/go-sundheit/internal/types"
+
+func allHealthy(results map[string]types.Result) (healthy bool) {
 	for _, v := range results {
 		if !v.IsHealthy() {
 			return false

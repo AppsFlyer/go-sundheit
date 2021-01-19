@@ -3,6 +3,8 @@ package gosundheit
 import (
 	"errors"
 	"fmt"
+	"github.com/AppsFlyer/go-sundheit/internal/metrics"
+	"github.com/AppsFlyer/go-sundheit/internal/types"
 	"strings"
 	"sync"
 	"testing"
@@ -156,9 +158,10 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 }
 
 func TestHealthMetrics(t *testing.T) {
-	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
 
 	h := New()
+	views := h.Views()
+	_ = view.Register(views.DefaultViews...)
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
@@ -166,35 +169,34 @@ func TestHealthMetrics(t *testing.T) {
 	// await first execution
 	time.Sleep(21 * time.Millisecond)
 
-	checksStatusData := simplifyRows(ViewCheckStatusByName.Name)
+	checksStatusData := simplifyRows(views.ViewCheckStatusByName.Name)
 	assert.Equal(t, 3, len(checksStatusData), "num status rows")
-	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[ValAllChecks], "all check status")
+	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[metrics.ValAllChecks], "all check status")
 	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[failingCheckName], "failing check status")
 	assert.Equal(t, &view.LastValueData{Value: 1}, checksStatusData[passingCheckName], "passing check status")
 
-	checksCountData := simplifyRows(ViewCheckCountByNameAndStatus.Name)
+	checksCountData := simplifyRows(views.ViewCheckCountByNameAndStatus.Name)
 	assert.Equal(t, 4, len(checksCountData), "num count rows")
 	// at this stage there should have been 2 "executions" of each check, the initial state is always failing
-	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[ValAllChecks+".false"], "all checks fail count")
+	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[metrics.ValAllChecks+".false"], "all checks fail count")
 	assert.Equal(t, &view.CountData{Value: 2}, checksCountData[failingCheckName+".false"], "failing check fail count")
 	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".false"], "passing check fail count")
 	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".true"], "passing check pass count")
 
-	checksTimeData := simplifyRows(ViewCheckExecutionTime.Name)
+	checksTimeData := simplifyRows(views.ViewCheckExecutionTime.Name)
 	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
 	assert.Equal(t, int64(2), checksTimeData[passingCheckName].(*view.DistributionData).Count, "passing check timing measurement count")
 	assert.Equal(t, int64(2), checksTimeData[failingCheckName].(*view.DistributionData).Count, "failing check timing measurement count")
 }
 
 func TestCheckListener(t *testing.T) {
-	h := New()
 
 	listenerMock := &checkListenerMock{}
 	listenerMock.On("OnCheckStarted", failingCheckName).Return()
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
 	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h.WithCheckListener(listenerMock)
+	h := New(WithCheckListener(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -236,14 +238,14 @@ type checkListenerMock struct {
 
 type completedCheck struct {
 	name string
-	res  Result
+	res  types.Result
 }
 
 func (l *checkListenerMock) OnCheckStarted(name string) {
 	l.Called(name)
 }
 
-func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
+func (l *checkListenerMock) OnCheckCompleted(name string, res types.Result) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 

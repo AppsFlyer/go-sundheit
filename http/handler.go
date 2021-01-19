@@ -14,14 +14,14 @@ const (
 )
 
 // HandleHealthJSON returns an HandlerFunc that can be used as an endpoints that exposes the service health
-func HandleHealthJSON(h health.Health) http.HandlerFunc {
+func HandleHealthJSON(h gosundheit.Health) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		results, healthy := h.Results()
 		w.Header().Set("Content-Type", "application/json")
 		if healthy {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 		} else {
-			w.WriteHeader(503)
+			w.WriteHeader(http.StatusServiceUnavailable)
 		}
 
 		encoder := json.NewEncoder(w)
