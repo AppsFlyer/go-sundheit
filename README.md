@@ -308,7 +308,7 @@ It is sometimes desired to keep track of checks execution and apply custom logic
 For example, you may want to add logging, or external metrics to your checks, 
 or add some trigger some recovery logic when a check fails after 3 consecutive times.
 
-The `health.CheckListener` interface allows you to hook this custom logic.
+The `gosundheit.CheckListener` interface allows you to hook this custom logic.
 
 For example, lets add a logging listener to our health repository:
 ```go
@@ -321,6 +321,11 @@ func (l checkEventsLogger) OnCheckStarted(name string) {
 func (l checkEventsLogger) OnCheckCompleted(name string, res gosundheit.Result) {
 	log.Printf("Check %q completed with result: %v\n", name, res)
 }
+```
+
+To register your listener:
+```go
+h := gosundheit.New(gosundheit.WithCheckListener(&checkEventsLogger))
 ```
 
 Please note that your `CheckListener` implementation must not block!
@@ -348,7 +353,7 @@ import (
 
 h := gosundheit.New()
 // ...
-view.Register(gosundheit.DefaultHealthViews...)
+view.Register(h.Views().DefaultViews...)
 // or register individual views. For example:
-view.Register(gosundheit.ViewCheckExecutionTime, gosundheit.ViewCheckStatusByName, ...)
+view.Register(h.Views().ViewCheckExecutionTime, h.Views().ViewCheckStatusByName, ...)
 ```
