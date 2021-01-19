@@ -3,8 +3,6 @@ package gosundheit
 import (
 	"errors"
 	"fmt"
-	"github.com/AppsFlyer/go-sundheit/internal/metrics"
-	"github.com/AppsFlyer/go-sundheit/internal/types"
 	"strings"
 	"sync"
 	"testing"
@@ -18,6 +16,8 @@ import (
 	"go.opencensus.io/tag"
 
 	"github.com/AppsFlyer/go-sundheit/checks"
+	"github.com/AppsFlyer/go-sundheit/internal/metrics"
+	"github.com/AppsFlyer/go-sundheit/internal/types"
 )
 
 const (
