@@ -42,6 +42,13 @@ func WithReadinessClassification() Option {
 	}
 }
 
+// WithStartupClassification sets the classification to "startup"
+func WithStartupClassification() Option {
+	return func(h *health) {
+		h.classification = "startup"
+	}
+}
+
 // WithStatsPrefix sets the reported metrics (and views) prefix
 func WithStatsPrefix(prefix string) Option {
 	return func(h *health) {
