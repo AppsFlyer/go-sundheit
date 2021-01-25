@@ -49,11 +49,14 @@ var (
 )
 
 func createMonitoringCtx(classification, checkName string, isPassing bool) (ctx context.Context) {
-	ctx, err := tag.New(
-		context.Background(),
-		tag.Insert(keyClassification, classification),
+	tags := []tag.Mutator{
 		tag.Insert(keyCheck, checkName),
-		tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)))
+		tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)),
+	}
+	if classification != "" {
+		tags = append(tags, tag.Insert(keyClassification, classification))
+	}
+	ctx, err := tag.New(context.Background(), tags...)
 	if err != nil {
 		// When this happens it's a programming error caused by the line above
 		log.Println("[Error] context creation failed for check ", checkName)

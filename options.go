@@ -47,21 +47,12 @@ func WithSetupClassification() Option {
 	}
 }
 
-func withDefaultClassification() Option {
-	return func(h *health) {
-		if h.classification == "" {
-			h.classification = "none"
-		}
-	}
-}
-
 // WithDefaults sets all the Health object settings. It's not required to use this as no options is always default
-// Defaults are: no check listener, classification set to 'none'
+// Defaults are: no check listener, classification set to ''
 func WithDefaults() Option {
 	return func(h *health) {
 		for _, opt := range []Option{
 			withDefaultCheckListener(),
-			withDefaultClassification(),
 		} {
 			opt(h)
 		}
