@@ -187,14 +187,13 @@ func TestHealthMetrics(t *testing.T) {
 }
 
 func TestCheckListener(t *testing.T) {
-	h := New()
 
 	listenerMock := &checkListenerMock{}
 	listenerMock.On("OnCheckStarted", failingCheckName).Return()
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
 	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h.WithCheckListener(listenerMock)
+	h := New(WithCheckListener(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
