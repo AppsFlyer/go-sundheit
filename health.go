@@ -33,10 +33,9 @@ type Health interface {
 // New returns a new Health instance.
 func New(opts ...Option) Health {
 	h := &health{
-		checksListener: noopCheckListener{},
-		results:        make(map[string]Result, maxExpectedChecks),
-		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
-		lock:           sync.RWMutex{},
+		results:    make(map[string]Result, maxExpectedChecks),
+		checkTasks: make(map[string]checkTask, maxExpectedChecks),
+		lock:       sync.RWMutex{},
 	}
 	for _, opt := range append(opts, WithDefaults()) {
 		opt(h)
