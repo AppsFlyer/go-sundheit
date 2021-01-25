@@ -164,7 +164,7 @@ func TestHealthMetrics(t *testing.T) {
 	defer h.DeregisterAll()
 
 	// await first execution
-	time.Sleep(21 * time.Millisecond)
+	time.Sleep(25 * time.Millisecond)
 
 	checksStatusData := simplifyRows(ViewCheckStatusByName.Name)
 	assert.Equal(t, 3, len(checksStatusData), "num status rows")
@@ -184,6 +184,56 @@ func TestHealthMetrics(t *testing.T) {
 	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
 	assert.Equal(t, int64(2), checksTimeData[passingCheckName].(*view.DistributionData).Count, "passing check timing measurement count")
 	assert.Equal(t, int64(2), checksTimeData[failingCheckName].(*view.DistributionData).Count, "failing check timing measurement count")
+
+	view.Unregister(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+}
+
+func runTestHealthMetricsWithClassification(t *testing.T, h Health, classification string) {
+	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+
+	registerCheck(h, failingCheckName, false, false)
+	registerCheck(h, passingCheckName, true, false)
+	defer h.DeregisterAll()
+
+	// await first execution
+	time.Sleep(25 * time.Millisecond)
+
+	checksStatusData := simplifyRows(ViewCheckStatusByName.Name)
+	assert.Equal(t, 3, len(checksStatusData), "num status rows")
+	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[ValAllChecks+"."+classification], "all check status")
+	assert.Equal(t, &view.LastValueData{Value: 0}, checksStatusData[failingCheckName+"."+classification], "failing check status")
+	assert.Equal(t, &view.LastValueData{Value: 1}, checksStatusData[passingCheckName+"."+classification], "passing check status")
+
+	checksCountData := simplifyRows(ViewCheckCountByNameAndStatus.Name)
+	assert.Equal(t, 4, len(checksCountData), "num count rows")
+	// at this stage there should have been 2 "executions" of each check, the initial state is always failing
+	assert.Equal(t, &view.CountData{Value: 4}, checksCountData[ValAllChecks+".false"+"."+classification], "all checks fail count")
+	assert.Equal(t, &view.CountData{Value: 2}, checksCountData[failingCheckName+".false"+"."+classification], "failing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".false"+"."+classification], "passing check fail count")
+	assert.Equal(t, &view.CountData{Value: 1}, checksCountData[passingCheckName+".true"+"."+classification], "passing check pass count")
+
+	checksTimeData := simplifyRows(ViewCheckExecutionTime.Name)
+	assert.Equal(t, 2, len(checksTimeData), "num timing rows")
+	assert.Equal(t, int64(2), checksTimeData[passingCheckName+"."+classification].(*view.DistributionData).Count, "passing check timing measurement count")
+	assert.Equal(t, int64(2), checksTimeData[failingCheckName+"."+classification].(*view.DistributionData).Count, "failing check timing measurement count")
+
+	view.Unregister(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+}
+
+func TestHealthMetricsWithLivenessClassification(t *testing.T) {
+	runTestHealthMetricsWithClassification(t, New(WithLivenessClassification()), "liveness")
+}
+
+func TestHealthMetricsWithSetupClassification(t *testing.T) {
+	runTestHealthMetricsWithClassification(t, New(WithSetupClassification()), "setup")
+}
+
+func TestHealthMetricsWithReadinessClassification(t *testing.T) {
+	runTestHealthMetricsWithClassification(t, New(WithReadinessClassification()), "readiness")
+}
+
+func TestHealthMetricsWithCustomClassification(t *testing.T) {
+	runTestHealthMetricsWithClassification(t, New(WithClassification("demo")), "demo")
 }
 
 func TestCheckListener(t *testing.T) {
