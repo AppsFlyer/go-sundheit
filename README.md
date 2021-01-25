@@ -83,6 +83,14 @@ func main() {
   log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
+### Using `Option` to Configure `Health` Service
+To create a health service, it's simple as calling the following code:
+```go
+gosundheit.New(options ...Option)
+```
+The optional parameters of `options` allows the user to configure the Health Service by passing configuration functions (implementing `Option` signature).    
+All options are marked with the prefix `WithX`. Available options:
+- `WithCheckListener`
 
 ### Built-in Checks
 The library comes with a set of built-in checks.
@@ -307,7 +315,7 @@ It is sometimes desired to keep track of checks execution and apply custom logic
 For example, you may want to add logging, or external metrics to your checks, 
 or add some trigger some recovery logic when a check fails after 3 consecutive times.
 
-The `health.CheckListener` interface allows you to hook this custom logic.
+The `gosundheit.CheckListener` interface allows you to hook this custom logic.
 
 For example, lets add a logging listener to our health repository:
 ```go
@@ -320,6 +328,11 @@ func (l checkEventsLogger) OnCheckStarted(name string) {
 func (l checkEventsLogger) OnCheckCompleted(name string, res gosundheit.Result) {
 	log.Printf("Check %q completed with result: %v\n", name, res)
 }
+```
+
+To register your listener:
+```go
+h := gosundheit.New(gosundheit.WithCheckListener(&checkEventsLogger))
 ```
 
 Please note that your `CheckListener` implementation must not block!

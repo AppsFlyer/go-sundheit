@@ -28,18 +28,19 @@ type Health interface {
 	// DeregisterAll Deregister removes all health checks from this instance, and stops their next executions.
 	// It is equivalent of calling Deregister() for each currently registered check.
 	DeregisterAll()
-	// WithCheckListener allows you to listen to check start/end events
-	WithCheckListener(listener CheckListener)
 }
 
 // New returns a new Health instance.
-func New() Health {
-	return &health{
-		checksListener: noopCheckListener{},
-		results:        make(map[string]Result, maxExpectedChecks),
-		checkTasks:     make(map[string]checkTask, maxExpectedChecks),
-		lock:           sync.RWMutex{},
+func New(opts ...Option) Health {
+	h := &health{
+		results:    make(map[string]Result, maxExpectedChecks),
+		checkTasks: make(map[string]checkTask, maxExpectedChecks),
+		lock:       sync.RWMutex{},
 	}
+	for _, opt := range append(opts, WithDefaults()) {
+		opt(h)
+	}
+	return h
 }
 
 type health struct {
