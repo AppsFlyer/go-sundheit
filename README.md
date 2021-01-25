@@ -83,6 +83,14 @@ func main() {
   log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
+### Using `Option` to Configure `Health` Service
+To create a health service, it's simple as calling the following code:
+```go
+gosundheit.New(options ...Option)
+```
+The optional parameters of `options` allows the user to configure the Health Service by passing configuration functions (implementing `Option` signature).    
+All options are marked with the prefix `WithX`. Available options:
+- `WithCheckListener`
 
 ### Built-in Checks
 The library comes with a set of built-in checks.
