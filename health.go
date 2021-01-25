@@ -48,6 +48,7 @@ type health struct {
 	checkTasks     map[string]checkTask
 	checksListener CheckListener
 	lock           sync.RWMutex
+	classification string
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
@@ -204,12 +205,12 @@ func (h *health) updateResult(
 }
 
 func (h *health) recordStats(checkName string, result Result) {
-	thisCheckCtx := createMonitoringCtx(checkName, result.IsHealthy())
+	thisCheckCtx := createMonitoringCtx(h.classification, checkName, result.IsHealthy())
 	stats.Record(thisCheckCtx, mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
 	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
 
 	allHealthy := allHealthy(h.results)
-	allChecksCtx := createMonitoringCtx(ValAllChecks, allHealthy)
+	allChecksCtx := createMonitoringCtx(h.classification, ValAllChecks, allHealthy)
 	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
 }
 
