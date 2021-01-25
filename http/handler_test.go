@@ -16,7 +16,7 @@ import (
 )
 
 func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
-	h := health.New()
+	h := gosundheit.New()
 	resp := execReq(h, true)
 	body, _ := ioutil.ReadAll(resp.Body)
 
@@ -25,7 +25,7 @@ func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
 }
 
 func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
-	h := health.New()
+	h := gosundheit.New()
 	resp := execReq(h, false)
 	body, _ := ioutil.ReadAll(resp.Body)
 
@@ -34,7 +34,7 @@ func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 }
 
 func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
-	h := health.New()
+	h := gosundheit.New()
 
 	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
 	if err != nil {
@@ -73,7 +73,7 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 }
 
 func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
-	h := health.New()
+	h := gosundheit.New()
 
 	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
 	if err != nil {
@@ -109,8 +109,8 @@ func unmarshalLongFormat(r io.Reader) *response {
 	return &respMsg
 }
 
-func createCheck(name string, passing bool, delay time.Duration) *health.Config {
-	return &health.Config{
+func createCheck(name string, passing bool, delay time.Duration) *gosundheit.Config {
+	return &gosundheit.Config{
 		InitialDelay:    delay,
 		ExecutionPeriod: delay,
 		Check: &checks.CustomCheck{
@@ -125,7 +125,7 @@ func createCheck(name string, passing bool, delay time.Duration) *health.Config 
 	}
 }
 
-func execReq(h health.Health, longFormat bool) *http.Response {
+func execReq(h gosundheit.Health, longFormat bool) *http.Response {
 	var path = "/meh"
 	if !longFormat {
 		path = fmt.Sprintf("%s?type=%s", path, ReportTypeShort)

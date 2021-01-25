@@ -1,64 +1,12 @@
-package health
+package gosundheit
 
 import (
-	"context"
 	"fmt"
-	"log"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-
-	"github.com/AppsFlyer/go-sundheit/checks"
-)
-
-const (
-	maxExpectedChecks = 16
-	initialResultMsg  = "didn't run yet"
-	// ValAllChecks is the value used for the check tags when tagging all tests
-	ValAllChecks = "all_checks"
-)
-
-var (
-	keyCheck, _        = tag.NewKey("check")
-	keyCheckPassing, _ = tag.NewKey("check_passing")
-
-	mCheckStatus   = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
-	mCheckDuration = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
-
-	// ViewCheckExecutionTime is the checks execution time aggregation tagged by check name
-	ViewCheckExecutionTime = &view.View{
-		Measure:     mCheckDuration,
-		TagKeys:     []tag.Key{keyCheck},
-		Aggregation: view.Distribution(0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 120, 160, 200, 250, 300, 500),
-	}
-
-	// ViewCheckCountByNameAndStatus is the checks execution count aggregation grouped by check name, and check status
-	ViewCheckCountByNameAndStatus = &view.View{
-		Name:        "health/check_count_by_name_and_status",
-		Measure:     mCheckStatus,
-		TagKeys:     []tag.Key{keyCheck, keyCheckPassing},
-		Aggregation: view.Count(),
-	}
-
-	// ViewCheckStatusByName is the checks status aggregation tagged by check name
-	ViewCheckStatusByName = &view.View{
-		Name:        "health/check_status_by_name",
-		Measure:     mCheckStatus,
-		TagKeys:     []tag.Key{keyCheck},
-		Aggregation: view.LastValue(),
-	}
-
-	// DefaultHealthViews are the default health check views provided by this package.
-	DefaultHealthViews = []*view.View{
-		ViewCheckCountByNameAndStatus,
-		ViewCheckStatusByName,
-		ViewCheckExecutionTime,
-	}
 )
 
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
@@ -82,32 +30,6 @@ type Health interface {
 	DeregisterAll()
 	// WithCheckListener allows you to listen to check start/end events
 	WithCheckListener(listener CheckListener)
-}
-
-// CheckListener can be used to gain check stats or log check transitions.
-// Implementations of this interface **must not block!**
-// If an implementation blocks, it may result in delayed execution of other health checks down the line.
-// It's OK to log in the implementation and it's OK to add metrics, but it's not OK to run anything that
-// takes long time to complete such as network IO etc.
-type CheckListener interface {
-	// OnCheckStarted is called when a check with the specified name has started
-	OnCheckStarted(name string)
-
-	// OnCheckCompleted is called when the check with the specified name has completed it's execution.
-	// The results are passed as an argument
-	OnCheckCompleted(name string, result Result)
-}
-
-// Config defines a health Check and it's scheduling timing requirements.
-type Config struct {
-	// Check is the health Check to be scheduled for execution.
-	Check checks.Check
-	// ExecutionPeriod is the period between successive executions.
-	ExecutionPeriod time.Duration
-	// InitialDelay is the time to delay first execution; defaults to zero.
-	InitialDelay time.Duration
-	// InitiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false
-	InitiallyPassing bool
 }
 
 // New returns a new Health instance.
@@ -154,26 +76,6 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 	h.checkTasks[cfg.Check.Name()] = task
 
 	return &task
-}
-
-type checkTask struct {
-	stopChan chan bool
-	ticker   *time.Ticker
-	check    checks.Check
-}
-
-func (t *checkTask) stop() {
-	if t.ticker != nil {
-		t.ticker.Stop()
-	}
-}
-
-func (t *checkTask) execute() (details interface{}, duration time.Duration, err error) {
-	startTime := time.Now()
-	details, err = t.check.Execute()
-	duration = time.Since(startTime)
-
-	return
 }
 
 func (h *health) stopCheckTask(name string) {
@@ -265,16 +167,6 @@ func (h *health) IsHealthy() (healthy bool) {
 	return allHealthy(h.results)
 }
 
-func allHealthy(results map[string]Result) (healthy bool) {
-	for _, v := range results {
-		if !v.IsHealthy() {
-			return false
-		}
-	}
-
-	return true
-}
-
 func (h *health) updateResult(
 	name string, details interface{}, checkDuration time.Duration, err error, t time.Time) (result Result) {
 
@@ -311,23 +203,13 @@ func (h *health) updateResult(
 }
 
 func (h *health) recordStats(checkName string, result Result) {
-	thisCheckCtx := h.createMonitoringCtx(checkName, result.IsHealthy())
+	thisCheckCtx := createMonitoringCtx(checkName, result.IsHealthy())
 	stats.Record(thisCheckCtx, mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
 	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
 
 	allHealthy := allHealthy(h.results)
-	allChecksCtx := h.createMonitoringCtx(ValAllChecks, allHealthy)
+	allChecksCtx := createMonitoringCtx(ValAllChecks, allHealthy)
 	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
-}
-
-func (h *health) createMonitoringCtx(checkName string, isPassing bool) (ctx context.Context) {
-	ctx, err := tag.New(context.Background(), tag.Insert(keyCheck, checkName), tag.Insert(keyCheckPassing, strconv.FormatBool(isPassing)))
-	if err != nil {
-		// When this happens it's a programming error caused by the line above
-		log.Println("[Error] context creation failed for check ", checkName)
-	}
-
-	return
 }
 
 func (h *health) WithCheckListener(listener CheckListener) {
@@ -335,73 +217,3 @@ func (h *health) WithCheckListener(listener CheckListener) {
 		h.checksListener = listener
 	}
 }
-
-// Result represents the output of a health check execution.
-type Result struct {
-	// the details of task Result - may be nil
-	Details interface{} `json:"message,omitempty"`
-	// the error returned from a failed health check - nil when successful
-	Error error `json:"error,omitempty"`
-	// the time of the last health check
-	Timestamp time.Time `json:"timestamp"`
-	// the execution duration of the last check
-	Duration time.Duration `json:"duration,omitempty"`
-	// the number of failures that occurred in a row
-	ContiguousFailures int64 `json:"contiguousFailures"`
-	// the time of the initial transitional failure
-	TimeOfFirstFailure *time.Time `json:"timeOfFirstFailure"`
-}
-
-// IsHealthy returns true iff the check result snapshot was a success
-func (r Result) IsHealthy() bool {
-	return r.Error == nil
-}
-
-func (r Result) String() string {
-	return fmt.Sprintf("Result{details: %s, err: %s, time: %s, contiguousFailures: %d, timeOfFirstFailure:%s}",
-		r.Details, r.Error, r.Timestamp, r.ContiguousFailures, r.TimeOfFirstFailure)
-}
-
-type status bool
-
-func (s status) asInt64() int64 {
-	if s {
-		return 1
-	}
-	return 0
-}
-
-type marshalableError struct {
-	Message string `json:"message,omitempty"`
-	Cause   error  `json:"cause,omitempty"`
-}
-
-func newMarshalableError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	mr := &marshalableError{
-		Message: err.Error(),
-	}
-
-	cause := errors.Cause(err)
-	if cause != err {
-		mr.Cause = newMarshalableError(cause)
-	}
-
-	return mr
-}
-
-func (e *marshalableError) Error() string {
-	return e.Message
-}
-
-type noopCheckListener struct{}
-
-func (noop noopCheckListener) OnCheckStarted(_ string) {}
-
-func (noop noopCheckListener) OnCheckCompleted(_ string, _ Result) {}
-
-// make sure noopCheckListener implements the CheckListener interface
-var _ CheckListener = noopCheckListener{}
