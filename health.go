@@ -46,7 +46,7 @@ func New(opts ...Option) Health {
 type health struct {
 	results        map[string]Result
 	checkTasks     map[string]checkTask
-	checksListener CheckListener
+	checksListener CheckListeners
 	lock           sync.RWMutex
 }
 
@@ -211,10 +211,4 @@ func (h *health) recordStats(checkName string, result Result) {
 	allHealthy := allHealthy(h.results)
 	allChecksCtx := createMonitoringCtx(ValAllChecks, allHealthy)
 	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
-}
-
-func (h *health) WithCheckListener(listener CheckListener) {
-	if listener != nil {
-		h.checksListener = listener
-	}
 }

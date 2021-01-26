@@ -14,11 +14,16 @@ type CheckListener interface {
 	OnCheckCompleted(name string, result Result)
 }
 
-type noopCheckListener struct{}
+type CheckListeners []CheckListener
 
-func (noop noopCheckListener) OnCheckStarted(_ string) {}
+func (c CheckListeners) OnCheckStarted(name string) {
+	for _, listener := range c {
+		listener.OnCheckStarted(name)
+	}
+}
 
-func (noop noopCheckListener) OnCheckCompleted(_ string, _ Result) {}
-
-// make sure noopCheckListener implements the CheckListener interface
-var _ CheckListener = noopCheckListener{}
+func (c CheckListeners) OnCheckCompleted(name string, result Result) {
+	for _, listener := range c {
+		listener.OnCheckCompleted(name, result)
+	}
+}

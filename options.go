@@ -3,18 +3,16 @@ package gosundheit
 type Option func(*health)
 
 // WithCheckListener allows you to listen to check start/end events
-func WithCheckListener(listener CheckListener) Option {
+func WithCheckListener(listener ...CheckListener) Option {
 	return func(h *health) {
-		if listener != nil {
-			h.checksListener = listener
-		}
+		h.checksListener = listener
 	}
 }
 
 func withDefaultCheckListener() Option {
 	return func(h *health) {
-		if h.checksListener == nil {
-			h.checksListener = noopCheckListener{}
+		if len(h.checksListener) == 0 {
+			h.checksListener = []CheckListener{}
 		}
 	}
 }
