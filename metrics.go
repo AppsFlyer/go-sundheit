@@ -2,11 +2,12 @@ package gosundheit
 
 import (
 	"context"
+	"log"
+	"strconv"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"log"
-	"strconv"
 )
 
 var (

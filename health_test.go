@@ -11,7 +11,6 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 
@@ -189,7 +188,7 @@ func TestHealthMetrics(t *testing.T) {
 }
 
 func runTestHealthMetricsWithClassification(t *testing.T, h Health, classification string) {
-	_ = view.Register(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+	_ = view.Register(DefaultHealthViews...)
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -217,7 +216,7 @@ func runTestHealthMetricsWithClassification(t *testing.T, h Health, classificati
 	assert.Equal(t, int64(2), checksTimeData[passingCheckName+"."+classification].(*view.DistributionData).Count, "passing check timing measurement count")
 	assert.Equal(t, int64(2), checksTimeData[failingCheckName+"."+classification].(*view.DistributionData).Count, "failing check timing measurement count")
 
-	view.Unregister(ViewCheckStatusByName, ViewCheckCountByNameAndStatus, ViewCheckExecutionTime)
+	view.Unregister(DefaultHealthViews...)
 }
 
 func TestHealthMetricsWithLivenessClassification(t *testing.T) {
