@@ -1,5 +1,5 @@
 name: go-build
-on: [push, pull_request]
+on: [ push, pull_request ]
 jobs:
   build:
     name: build ( ${{ matrix.go }} ), test, lint
@@ -21,16 +21,16 @@ jobs:
           GOPROXY: "https://proxy.golang.org"
         run: go build .
 
-      - name: Test
-        env:
-          GOPROXY: "https://proxy.golang.org"
-        run: go test -v -race -coverprofile=coverage.out ./...
-
       - name: Install golangci-lint
         run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.20.0
 
       - name: Run golangci-lint
         run: golangci-lint run -E golint -E gosec -E gofmt
+
+      - name: Test
+        env:
+          GOPROXY: "https://proxy.golang.org"
+        run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: convert to lcov
         if: ${{ matrix.go }} == '1.15'
@@ -64,26 +64,13 @@ jobs:
           GOPROXY: "https://proxy.golang.org"
         run: cd opencencus-check-listener && go build .
 
-      - name: Test
-        env:
-          GOPROXY: "https://proxy.golang.org"
-        run: cd opencencus-check-listener && go test -v -race -coverprofile=coverage.out ./...
-
       - name: Install golangci-lint
         run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.20.0
 
       - name: Run golangci-lint
         run: cd opencencus-check-listener && golangci-lint run -E golint -E gosec -E gofmt
 
-      - name: convert to lcov
-        if: ${{ matrix.go }} == '1.15'
-        run: |
-          go get -u github.com/jandelgado/gcov2lcov
-          gcov2lcov -infile=opencencus-check-listener/coverage.out -outfile=opencencus-check-listener/coverage.lcov
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        if: ${{ matrix.go }} == '1.15'
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: opencencus-check-listener/coverage.lcov
+      - name: Test
+        env:
+          GOPROXY: "https://proxy.golang.org"
+        run: cd opencencus-check-listener && go test -v -race -coverprofile=coverage.out ./...
