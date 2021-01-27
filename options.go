@@ -9,11 +9,9 @@ func WithCheckListener(listener ...CheckListener) Option {
 	}
 }
 
-func withDefaultCheckListener() Option {
+func WithHealthListener(listener ...HealthListener) Option {
 	return func(h *health) {
-		if len(h.checksListener) == 0 {
-			h.checksListener = []CheckListener{}
-		}
+		h.healthListener = listener
 	}
 }
 
@@ -21,9 +19,7 @@ func withDefaultCheckListener() Option {
 // Defaults are: no check listener
 func WithDefaults() Option {
 	return func(h *health) {
-		for _, opt := range []Option{
-			withDefaultCheckListener(),
-		} {
+		for _, opt := range []Option{} {
 			opt(h)
 		}
 	}

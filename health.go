@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opencensus.io/stats"
 )
 
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
@@ -47,6 +46,7 @@ type health struct {
 	results        map[string]Result
 	checkTasks     map[string]checkTask
 	checksListener CheckListeners
+	healthListener HealthListeners
 	lock           sync.RWMutex
 }
 
@@ -61,7 +61,8 @@ func (h *health) RegisterCheck(cfg *Config) error {
 		initialErr = fmt.Errorf(initialResultMsg)
 	}
 
-	h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
+	result := h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
+	h.checksListener.OnCheckRegistered(cfg.Check.Name(), result)
 	h.scheduleCheck(h.createCheckTask(cfg), cfg)
 	return nil
 }
@@ -97,13 +98,14 @@ func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
 		if !h.runCheckOrStop(task, time.After(cfg.InitialDelay)) {
 			return
 		}
-
+		h.healthListener.OnResultsUpdated(h.results)
 		// scheduled recurring execution
 		task.ticker = time.NewTicker(cfg.ExecutionPeriod)
 		for {
 			if !h.runCheckOrStop(task, task.ticker.C) {
 				return
 			}
+			h.healthListener.OnResultsUpdated(h.results)
 		}
 	}()
 }
@@ -198,17 +200,5 @@ func (h *health) updateResult(
 	}
 
 	h.results[name] = result
-	h.recordStats(name, result)
-
 	return result
-}
-
-func (h *health) recordStats(checkName string, result Result) {
-	thisCheckCtx := createMonitoringCtx(checkName, result.IsHealthy())
-	stats.Record(thisCheckCtx, mCheckDuration.M(float64(result.Duration)/float64(time.Millisecond)))
-	stats.Record(thisCheckCtx, mCheckStatus.M(status(result.IsHealthy()).asInt64()))
-
-	allHealthy := allHealthy(h.results)
-	allChecksCtx := createMonitoringCtx(ValAllChecks, allHealthy)
-	stats.Record(allChecksCtx, mCheckStatus.M(status(allHealthy).asInt64()))
 }
