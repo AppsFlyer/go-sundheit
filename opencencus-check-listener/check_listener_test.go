@@ -130,7 +130,7 @@ func tagsString(tags []tag.Tag) string {
 	return strings.Join(values, ".")
 }
 
-func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPassing bool) checkStub {
+func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPassing bool) {
 	stub := checkStub{
 		counts:  0,
 		passing: passing,
@@ -145,8 +145,6 @@ func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPass
 		ExecutionPeriod:  120 * time.Millisecond,
 		InitiallyPassing: initiallyPassing,
 	})
-
-	return stub
 }
 
 type checkStub struct {

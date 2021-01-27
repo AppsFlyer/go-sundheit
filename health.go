@@ -98,14 +98,18 @@ func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
 		if !h.runCheckOrStop(task, time.After(cfg.InitialDelay)) {
 			return
 		}
-		h.healthListener.OnResultsUpdated(h.results)
+		h.lock.RLock()
+		h.healthListener.OnResultsUpdated(copyResultMap(h.results))
+		h.lock.RUnlock()
 		// scheduled recurring execution
 		task.ticker = time.NewTicker(cfg.ExecutionPeriod)
 		for {
 			if !h.runCheckOrStop(task, task.ticker.C) {
 				return
 			}
-			h.healthListener.OnResultsUpdated(h.results)
+			h.lock.RLock()
+			h.healthListener.OnResultsUpdated(copyResultMap(h.results))
+			h.lock.RUnlock()
 		}
 	}()
 }
