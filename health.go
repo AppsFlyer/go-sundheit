@@ -147,8 +147,8 @@ func (h *health) DeregisterAll() {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
-	for k := range h.checkTasks {
-		h.Deregister(k)
+	for _, task := range h.checkTasks {
+		task.stopChan <- true
 	}
 }
 
