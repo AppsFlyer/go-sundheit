@@ -187,6 +187,25 @@ func TestCheckListener(t *testing.T) {
 	}
 }
 
+func TestHealthListeners(t *testing.T) {
+
+	listenerMock := &healthListenerMock{}
+	listenerMock.On(
+		"OnResultsUpdated",
+		mock.AnythingOfType("map[string]gosundheit.Result")).
+		Return().Times(2)
+	h := New(WithHealthListener(listenerMock))
+
+	registerCheck(h, failingCheckName, false, false)
+	registerCheck(h, passingCheckName, true, false)
+	defer h.DeregisterAll()
+
+	// await first execution
+	time.Sleep(30 * time.Millisecond)
+
+	listenerMock.AssertExpectations(t)
+}
+
 func (l *checkListenerMock) getCompletedChecks() []completedCheck {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
@@ -219,4 +238,12 @@ func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
 
 	l.Called(name, res)
 	l.completed = append(l.completed, completedCheck{name, res})
+}
+
+type healthListenerMock struct {
+	mock.Mock
+}
+
+func (h *healthListenerMock) OnResultsUpdated(results map[string]Result) {
+	h.Called(results)
 }

@@ -16,11 +16,7 @@ func WithHealthListener(listener ...HealthListener) Option {
 }
 
 // WithDefaults sets all the Health object settings. It's not required to use this as no options is always default
-// Defaults are: no check listener
+// This is a simple placeholder for any future defaults
 func WithDefaults() Option {
-	return func(h *health) {
-		for _, opt := range []Option{} {
-			opt(h)
-		}
-	}
+	return func(h *health) {}
 }
