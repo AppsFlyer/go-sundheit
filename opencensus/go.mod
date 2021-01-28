@@ -1,4 +1,4 @@
-module github.com/AppsFlyer/go-sundheit/opencencus
+module github.com/AppsFlyer/go-sundheit/opencensus
 
 go 1.15
 
