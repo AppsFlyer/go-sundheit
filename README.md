@@ -380,11 +380,11 @@ The views can be registered like so:
 ```go
 import (
 	"github.com/AppsFlyer/go-sundheit"
-	"github.com/AppsFlyer/go-sundheit/opencencus-check-listener"
+	"github.com/AppsFlyer/go-sundheit/opencencus"
 	"go.opencensus.io/stats/view"
 )
 // This listener can act both as check and health listener for reporting metrics
-oc := opencencus.NewCheckListener()
+oc := opencencus.NewMetricsListener()
 h := gosundheit.New(gosundheit.WithCheckListener(oc), gosundheit.WithHealthListener(oc))
 // ...
 view.Register(opencencus.DefaultHealthViews...)
@@ -399,11 +399,11 @@ To report metrics using `classification` tag - it's possible to initialize the O
 
 ```go
 // startup
-opencencus.NewCheckListener(opencencus.WithStartupClassification())
+opencencus.NewMetricsListener(opencencus.WithStartupClassification())
 // liveness
-opencencus.NewCheckListener(opencencus.WithLivenessClassification())
+opencencus.NewMetricsListener(opencencus.WithLivenessClassification())
 // readiness
-opencencus.NewCheckListener(opencencus.WithReadinessClassification())
+opencencus.NewMetricsListener(opencencus.WithReadinessClassification())
 // custom
-opencencus.NewCheckListener(opencencus.WithClassification("custom"))
+opencencus.NewMetricsListener(opencencus.WithClassification("custom"))
 ```

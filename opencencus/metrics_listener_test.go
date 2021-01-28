@@ -26,7 +26,7 @@ const (
 func TestHealthMetrics(t *testing.T) {
 	_ = view.Register(DefaultHealthViews...)
 
-	listener := NewCheckListener()
+	listener := NewMetricsListener()
 	h := gosundheit.New(gosundheit.WithCheckListeners(listener), gosundheit.WithHealthListeners(listener))
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -60,7 +60,7 @@ func TestHealthMetrics(t *testing.T) {
 func runTestHealthMetricsWithClassification(t *testing.T, option Option, classification string) {
 	_ = view.Register(DefaultHealthViews...)
 
-	listener := NewCheckListener(option)
+	listener := NewMetricsListener(option)
 	h := gosundheit.New(gosundheit.WithCheckListeners(listener), gosundheit.WithHealthListeners(listener))
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)

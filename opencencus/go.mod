@@ -1,4 +1,4 @@
-module github.com/AppsFlyer/go-sundheit/opencencus-check-listener
+module github.com/AppsFlyer/go-sundheit/opencencus
 
 go 1.15
 
