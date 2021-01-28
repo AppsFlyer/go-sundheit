@@ -160,7 +160,7 @@ func TestCheckListener(t *testing.T) {
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
 	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h := New(WithCheckListener(listenerMock))
+	h := New(WithCheckListeners(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -194,7 +194,7 @@ func TestHealthListeners(t *testing.T) {
 		"OnResultsUpdated",
 		mock.AnythingOfType("map[string]gosundheit.Result")).
 		Return().Times(2)
-	h := New(WithHealthListener(listenerMock))
+	h := New(WithHealthListeners(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)

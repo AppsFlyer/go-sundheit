@@ -90,7 +90,8 @@ gosundheit.New(options ...Option)
 ```
 The optional parameters of `options` allows the user to configure the Health Service by passing configuration functions (implementing `Option` signature).    
 All options are marked with the prefix `WithX`. Available options:
-- `WithCheckListener`
+- `WithCheckListeners` - enables you to act on check registration, start and completed events
+- `WithHealthListeners` - enables you to act on changes in the health service results
 
 ### Built-in Checks
 The library comes with a set of built-in checks.
@@ -321,6 +322,10 @@ For example, lets add a logging listener to our health repository:
 ```go
 type checkEventsLogger struct{}
 
+func (l checkEventsLogger) OnCheckRegistered(name string, res gosundheit.Result) {
+    log.Printf("Check %q registered with initial result: %v\n", name, res)
+}
+
 func (l checkEventsLogger) OnCheckStarted(name string) {
 	log.Printf("Check %q started...\n", name)
 }
@@ -332,13 +337,33 @@ func (l checkEventsLogger) OnCheckCompleted(name string, res gosundheit.Result) 
 
 To register your listener:
 ```go
-h := gosundheit.New(gosundheit.WithCheckListener(&checkEventsLogger))
+h := gosundheit.New(gosundheit.WithCheckListeners(&checkEventsLogger))
 ```
 
 Please note that your `CheckListener` implementation must not block!
 
+### HealthListener
+It is something desired to track changes in registered checks results.
+For example, you may want to log the amount of results monitored, or send metrics on these results.
+
+The `gosundheit.HealthListener` interface allows you to hook this custom logic.
+
+For example, lets add a logging listener:
+```go
+type healthLogger struct{}
+
+func (l healthLogger) OnResultsUpdated(results map[string]Result) {
+	log.Printf("There are %d results, general health is %t\n", len(results), allHealthy(results))
+}
+```
+
+To register your listener:
+```go
+h := gosundheit.New(gosundheit.WithHealthListeners(&checkHealthLogger))
+```
+
 ## Metrics
-The library exposes the following OpenCensus view for your convenience:
+The library can expose metrics using a `CheckListener`. At the moment, OpenCensus is available and exposes the following metrics:
 * `health/check_status_by_name` - An aggregated health status gauge (0/1 for fail/pass) at the time of sampling.
 The aggregation uses the following tags:
   * `check=allChecks`     - all checks aggregation
@@ -355,12 +380,30 @@ The views can be registered like so:
 ```go
 import (
 	"github.com/AppsFlyer/go-sundheit"
+	"github.com/AppsFlyer/go-sundheit/opencencus-check-listener"
 	"go.opencensus.io/stats/view"
 )
-
-h := gosundheit.New()
+// This listener can act both as check and health listener for reporting metrics
+oc := opencencus.NewCheckListener()
+h := gosundheit.New(gosundheit.WithCheckListener(oc), gosundheit.WithHealthListener(oc))
 // ...
-view.Register(gosundheit.DefaultHealthViews...)
+view.Register(opencencus.DefaultHealthViews...)
 // or register individual views. For example:
-view.Register(gosundheit.ViewCheckExecutionTime, gosundheit.ViewCheckStatusByName, ...)
+view.Register(opencencus.ViewCheckExecutionTime, opencencus.ViewCheckStatusByName, ...)
+```
+
+### Classification
+
+It is sometimes required to report metrics for different check types (e.g. setup, liveness, readiness).
+To report metrics using `classification` tag - it's possible to initialize the OpenCencus listener with classification:
+
+```go
+// startup
+opencencus.NewCheckListener(opencencus.WithStartupClassification())
+// liveness
+opencencus.NewCheckListener(opencencus.WithLivenessClassification())
+// readiness
+opencencus.NewCheckListener(opencencus.WithReadinessClassification())
+// custom
+opencencus.NewCheckListener(opencencus.WithClassification("custom"))
 ```

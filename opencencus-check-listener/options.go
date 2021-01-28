@@ -22,10 +22,10 @@ func WithReadinessClassification() Option {
 	}
 }
 
-// WithSetupClassification sets the classification to "setup"
-func WithSetupClassification() Option {
+// WithStartupClassification sets the classification to "startup"
+func WithStartupClassification() Option {
 	return func(listener *CheckListener) {
-		listener.classification = "setup"
+		listener.classification = "startup"
 	}
 }
 

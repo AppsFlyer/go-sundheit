@@ -2,14 +2,15 @@ package gosundheit
 
 type Option func(*health)
 
-// WithCheckListener allows you to listen to check start/end events
-func WithCheckListener(listener ...CheckListener) Option {
+// WithCheckListeners allows you to listen to check start/end events
+func WithCheckListeners(listener ...CheckListener) Option {
 	return func(h *health) {
 		h.checksListener = listener
 	}
 }
 
-func WithHealthListener(listener ...HealthListener) Option {
+// WithHealthListeners allows you to listen to overall results change
+func WithHealthListeners(listener ...HealthListener) Option {
 	return func(h *health) {
 		h.healthListener = listener
 	}

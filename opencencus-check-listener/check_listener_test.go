@@ -27,7 +27,7 @@ func TestHealthMetrics(t *testing.T) {
 	_ = view.Register(DefaultHealthViews...)
 
 	listener := NewCheckListener()
-	h := gosundheit.New(gosundheit.WithCheckListener(listener), gosundheit.WithHealthListener(listener))
+	h := gosundheit.New(gosundheit.WithCheckListeners(listener), gosundheit.WithHealthListeners(listener))
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
@@ -61,7 +61,7 @@ func runTestHealthMetricsWithClassification(t *testing.T, option Option, classif
 	_ = view.Register(DefaultHealthViews...)
 
 	listener := NewCheckListener(option)
-	h := gosundheit.New(gosundheit.WithCheckListener(listener), gosundheit.WithHealthListener(listener))
+	h := gosundheit.New(gosundheit.WithCheckListeners(listener), gosundheit.WithHealthListeners(listener))
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
@@ -95,8 +95,8 @@ func TestHealthMetricsWithLivenessClassification(t *testing.T) {
 	runTestHealthMetricsWithClassification(t, WithLivenessClassification(), "liveness")
 }
 
-func TestHealthMetricsWithSetupClassification(t *testing.T) {
-	runTestHealthMetricsWithClassification(t, WithSetupClassification(), "setup")
+func TestHealthMetricsWithStartupClassification(t *testing.T) {
+	runTestHealthMetricsWithClassification(t, WithStartupClassification(), "startup")
 }
 
 func TestHealthMetricsWithReadinessClassification(t *testing.T) {
