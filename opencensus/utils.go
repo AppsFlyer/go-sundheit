@@ -1,4 +1,4 @@
-package opencencus
+package opencensus
 
 import gosundheit "github.com/AppsFlyer/go-sundheit"
 

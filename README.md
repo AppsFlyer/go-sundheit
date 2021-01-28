@@ -380,7 +380,7 @@ The views can be registered like so:
 ```go
 import (
 	"github.com/AppsFlyer/go-sundheit"
-	"github.com/AppsFlyer/go-sundheit/opencencus"
+	"github.com/AppsFlyer/go-sundheit/opencensus"
 	"go.opencensus.io/stats/view"
 )
 // This listener can act both as check and health listener for reporting metrics

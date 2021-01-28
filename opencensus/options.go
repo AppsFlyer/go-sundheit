@@ -1,4 +1,4 @@
-package opencencus
+package opencensus
 
 type Option func(*MetricsListener)
 
