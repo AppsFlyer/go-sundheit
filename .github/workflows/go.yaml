@@ -45,7 +45,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: coverage.lcov
   build-opencencus-check-listener:
-    name: build ( ${{ matrix.go }} ), test, lint for opencencus-check-listener
+    name: build ( ${{ matrix.go }} ), test, lint for opencencus
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -62,15 +62,15 @@ jobs:
       - name: Build
         env:
           GOPROXY: "https://proxy.golang.org"
-        run: cd opencencus-check-listener && go build .
+        run: cd opencencus && go build .
 
       - name: Install golangci-lint
         run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.20.0
 
       - name: Run golangci-lint
-        run: cd opencencus-check-listener && golangci-lint run -E golint -E gosec -E gofmt
+        run: cd opencencus && golangci-lint run -E golint -E gosec -E gofmt
 
       - name: Test
         env:
           GOPROXY: "https://proxy.golang.org"
-        run: cd opencencus-check-listener && go test -v -race -coverprofile=coverage.out ./...
+        run: cd opencencus && go test -v -race -coverprofile=coverage.out ./...
