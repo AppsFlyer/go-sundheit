@@ -112,8 +112,9 @@ func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
 
 func (h *health) reportResults() {
 	h.lock.RLock()
-	defer h.lock.RUnlock()
-	h.healthListener.OnResultsUpdated(copyResultsMap(h.results))
+	resultsCopy := copyResultsMap(h.results)
+	h.lock.RUnlock()
+	h.healthListener.OnResultsUpdated(resultsCopy)
 }
 
 func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) bool {
