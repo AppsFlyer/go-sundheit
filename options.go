@@ -2,31 +2,22 @@ package gosundheit
 
 type Option func(*health)
 
-// WithCheckListener allows you to listen to check start/end events
-func WithCheckListener(listener CheckListener) Option {
+// WithCheckListeners allows you to listen to check start/end events
+func WithCheckListeners(listener ...CheckListener) Option {
 	return func(h *health) {
-		if listener != nil {
-			h.checksListener = listener
-		}
+		h.checksListener = listener
 	}
 }
 
-func withDefaultCheckListener() Option {
+// WithHealthListeners allows you to listen to overall results change
+func WithHealthListeners(listener ...HealthListener) Option {
 	return func(h *health) {
-		if h.checksListener == nil {
-			h.checksListener = noopCheckListener{}
-		}
+		h.healthListener = listener
 	}
 }
 
 // WithDefaults sets all the Health object settings. It's not required to use this as no options is always default
-// Defaults are: no check listener
+// This is a simple placeholder for any future defaults
 func WithDefaults() Option {
-	return func(h *health) {
-		for _, opt := range []Option{
-			withDefaultCheckListener(),
-		} {
-			opt(h)
-		}
-	}
+	return func(h *health) {}
 }

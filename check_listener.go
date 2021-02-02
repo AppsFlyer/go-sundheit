@@ -6,6 +6,10 @@ package gosundheit
 // It's OK to log in the implementation and it's OK to add metrics, but it's not OK to run anything that
 // takes long time to complete such as network IO etc.
 type CheckListener interface {
+	// OnCheckRegistered is called when the check with the specified name has registered.
+	// Result argument is for reporting the first run state of the check
+	OnCheckRegistered(name string, result Result)
+
 	// OnCheckStarted is called when a check with the specified name has started
 	OnCheckStarted(name string)
 
@@ -14,11 +18,22 @@ type CheckListener interface {
 	OnCheckCompleted(name string, result Result)
 }
 
-type noopCheckListener struct{}
+type CheckListeners []CheckListener
 
-func (noop noopCheckListener) OnCheckStarted(_ string) {}
+func (c CheckListeners) OnCheckRegistered(name string, result Result) {
+	for _, listener := range c {
+		listener.OnCheckRegistered(name, result)
+	}
+}
 
-func (noop noopCheckListener) OnCheckCompleted(_ string, _ Result) {}
+func (c CheckListeners) OnCheckStarted(name string) {
+	for _, listener := range c {
+		listener.OnCheckStarted(name)
+	}
+}
 
-// make sure noopCheckListener implements the CheckListener interface
-var _ CheckListener = noopCheckListener{}
+func (c CheckListeners) OnCheckCompleted(name string, result Result) {
+	for _, listener := range c {
+		listener.OnCheckCompleted(name, result)
+	}
+}

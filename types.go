@@ -65,12 +65,3 @@ func newMarshalableError(err error) error {
 func (e *marshalableError) Error() string {
 	return e.Message
 }
-
-type status bool
-
-func (s status) asInt64() int64 {
-	if s {
-		return 1
-	}
-	return 0
-}
