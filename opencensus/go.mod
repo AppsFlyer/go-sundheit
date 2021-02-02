@@ -9,6 +9,4 @@ require (
 	go.opencensus.io v0.22.1
 )
 
-replace (
-	github.com/AppsFlyer/go-sundheit => ../
-)
+replace github.com/AppsFlyer/go-sundheit => ../
