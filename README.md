@@ -18,12 +18,7 @@ The project is named after the German word `Gesundheit` which means ‘health’
 ## Installation
 Using go modules:
 ```
-go get github.com/AppsFlyer/go-sundheit@v0.2.0
-```
-
-Using dep:
-```
-dep ensure -add github.com/AppsFlyer/go-sundheit@v0.2.0
+go get github.com/AppsFlyer/go-sundheit@v0.3.0
 ```
 
 ## Usage
