@@ -1,5 +1,7 @@
 package checks
 
+import gosundheit "github.com/AppsFlyer/go-sundheit"
+
 // CustomCheck is a simple Check implementation if all you need is a functional check
 type CustomCheck struct {
 	// CheckName s the name of the check.
@@ -8,7 +10,7 @@ type CustomCheck struct {
 	CheckFunc func() (details interface{}, err error)
 }
 
-var _ Check = (*CustomCheck)(nil)
+var _ gosundheit.Check = (*CustomCheck)(nil)
 
 // Name is the name of the check.
 // Check names must be metric compatible.
