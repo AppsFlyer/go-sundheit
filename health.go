@@ -37,7 +37,7 @@ func New(opts ...Option) Health {
 		lock:       sync.RWMutex{},
 	}
 	for _, opt := range append(opts, WithDefaults()) {
-		opt(h)
+		opt.apply(h)
 	}
 	return h
 }
