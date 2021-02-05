@@ -48,6 +48,11 @@ type health struct {
 	checksListener CheckListeners
 	healthListener HealthListeners
 	lock           sync.RWMutex
+
+	// Check config defaults
+	defaultExecutionPeriod  time.Duration
+	defaultInitialDelay     time.Duration
+	defaultInitiallyPassing bool
 }
 
 func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
@@ -55,7 +60,11 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 		return errors.Errorf("misconfigured check %v", check)
 	}
 
-	var cfg checkConfig
+	cfg := checkConfig{
+		executionPeriod:  h.defaultExecutionPeriod,
+		initialDelay:     h.defaultInitialDelay,
+		initiallyPassing: h.defaultInitiallyPassing,
+	}
 
 	for _, opt := range opts {
 		opt.applyCheck(&cfg)

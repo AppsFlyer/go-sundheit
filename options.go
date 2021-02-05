@@ -48,29 +48,58 @@ type CheckOption interface {
 	applyCheck(*checkConfig)
 }
 
-type checkOptionFunc func(*checkConfig)
+// Option configures a health checker or a health check using the functional options paradigm
+// popularized by Rob Pike and Dave Cheney.
+// If you're unfamiliar with this style, see:
+// - https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html
+// - https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis.
+// - https://sagikazarmark.hu/blog/functional-options-on-steroids/
+type Option interface {
+	HealthOption
+	CheckOption
+}
 
-func (fn checkOptionFunc) applyCheck(c *checkConfig) {
-	fn(c)
+type executionPeriod time.Duration
+
+func (o executionPeriod) apply(h *health) {
+	h.defaultExecutionPeriod = time.Duration(o)
+}
+
+func (o executionPeriod) applyCheck(c *checkConfig) {
+	c.executionPeriod = time.Duration(o)
 }
 
 // ExecutionPeriod is the period between successive executions.
-func ExecutionPeriod(d time.Duration) CheckOption {
-	return checkOptionFunc(func(c *checkConfig) {
-		c.executionPeriod = d
-	})
+func ExecutionPeriod(d time.Duration) Option {
+	return executionPeriod(d)
+}
+
+type initialDelay time.Duration
+
+func (o initialDelay) apply(h *health) {
+	h.defaultInitialDelay = time.Duration(o)
+}
+
+func (o initialDelay) applyCheck(c *checkConfig) {
+	c.initialDelay = time.Duration(o)
 }
 
 // InitialDelay is the time to delay first execution; defaults to zero.
-func InitialDelay(d time.Duration) CheckOption {
-	return checkOptionFunc(func(c *checkConfig) {
-		c.initialDelay = d
-	})
+func InitialDelay(d time.Duration) Option {
+	return initialDelay(d)
+}
+
+type initiallyPassing bool
+
+func (o initiallyPassing) apply(h *health) {
+	h.defaultInitiallyPassing = bool(o)
+}
+
+func (o initiallyPassing) applyCheck(c *checkConfig) {
+	c.initiallyPassing = bool(o)
 }
 
 // InitiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false
-func InitiallyPassing(b bool) CheckOption {
-	return checkOptionFunc(func(c *checkConfig) {
-		c.initiallyPassing = b
-	})
+func InitiallyPassing(b bool) Option {
+	return initiallyPassing(b)
 }
