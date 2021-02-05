@@ -30,7 +30,7 @@ type Health interface {
 }
 
 // New returns a new Health instance.
-func New(opts ...Option) Health {
+func New(opts ...HealthOption) Health {
 	h := &health{
 		results:    make(map[string]Result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
