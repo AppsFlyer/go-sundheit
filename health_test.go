@@ -1,4 +1,4 @@
-package gosundheit
+package gosundheit_test
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	. "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
