@@ -34,7 +34,6 @@ func New(opts ...Option) Health {
 	h := &health{
 		results:    make(map[string]Result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
-		lock:       sync.RWMutex{},
 	}
 	for _, opt := range append(opts, WithDefaults()) {
 		opt(h)
@@ -47,7 +46,7 @@ type health struct {
 	checkTasks     map[string]checkTask
 	checksListener CheckListeners
 	healthListener HealthListeners
-	lock           sync.RWMutex
+	mu             sync.RWMutex
 }
 
 func (h *health) RegisterCheck(cfg *Config) error {
@@ -68,8 +67,8 @@ func (h *health) RegisterCheck(cfg *Config) error {
 }
 
 func (h *health) createCheckTask(cfg *Config) *checkTask {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	task := checkTask{
 		stopChan: make(chan bool, 1),
@@ -81,8 +80,8 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 }
 
 func (h *health) stopCheckTask(name string) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	task := h.checkTasks[name]
 
@@ -111,9 +110,9 @@ func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
 }
 
 func (h *health) reportResults() {
-	h.lock.RLock()
+	h.mu.RLock()
 	resultsCopy := copyResultsMap(h.results)
-	h.lock.RUnlock()
+	h.mu.RUnlock()
 	h.healthListener.OnResultsUpdated(resultsCopy)
 }
 
@@ -136,8 +135,8 @@ func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
 }
 
 func (h *health) Deregister(name string) {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	task, ok := h.checkTasks[name]
 	if ok {
@@ -147,8 +146,8 @@ func (h *health) Deregister(name string) {
 }
 
 func (h *health) DeregisterAll() {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	for _, task := range h.checkTasks {
 		task.stopChan <- true
@@ -156,8 +155,8 @@ func (h *health) DeregisterAll() {
 }
 
 func (h *health) Results() (results map[string]Result, healthy bool) {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	results = make(map[string]Result, len(h.results))
 
@@ -171,8 +170,8 @@ func (h *health) Results() (results map[string]Result, healthy bool) {
 }
 
 func (h *health) IsHealthy() (healthy bool) {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	return allHealthy(h.results)
 }
@@ -180,8 +179,8 @@ func (h *health) IsHealthy() (healthy bool) {
 func (h *health) updateResult(
 	name string, details interface{}, checkDuration time.Duration, err error, t time.Time) (result Result) {
 
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	prevResult, ok := h.results[name]
 	result = Result{
