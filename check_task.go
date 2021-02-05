@@ -2,14 +2,12 @@ package gosundheit
 
 import (
 	"time"
-
-	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 type checkTask struct {
 	stopChan chan bool
 	ticker   *time.Ticker
-	check    checks.Check
+	check    Check
 }
 
 func (t *checkTask) stop() {
