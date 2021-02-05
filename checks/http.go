@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +50,7 @@ type httpCheck struct {
 type BodyProvider func() io.Reader
 
 // NewHTTPCheck creates a new http check defined by the given config
-func NewHTTPCheck(config HTTPCheckConfig) (check Check, err error) {
+func NewHTTPCheck(config HTTPCheckConfig) (check gosundheit.Check, err error) {
 	if config.URL == "" {
 		return nil, errors.Errorf("URL must not be empty")
 	}
