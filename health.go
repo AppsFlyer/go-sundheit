@@ -13,7 +13,7 @@ type Health interface {
 	// RegisterCheck registers a health check according to the given configuration.
 	// Once RegisterCheck() is called, the check is scheduled to run in it's own goroutine.
 	// Callers must make sure the checks complete at a reasonable time frame, or the next execution will delay.
-	RegisterCheck(cfg *Config) error
+	RegisterCheck(check Check, opts ...CheckOption) error
 	// Deregister removes a health check from this instance, and stops it's next executions.
 	// If the check is running while Deregister() is called, the check may complete it's current execution.
 	// Once a check is removed, it's results are no longer returned.
@@ -49,20 +49,26 @@ type health struct {
 	mu             sync.RWMutex
 }
 
-func (h *health) RegisterCheck(cfg *Config) error {
-	if cfg.Check == nil || cfg.Check.Name() == "" {
-		return errors.Errorf("misconfigured check %v", cfg.Check)
+func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
+	if check == nil || check.Name() == "" {
+		return errors.Errorf("misconfigured check %v", check)
+	}
+
+	var cfg checkConfig
+
+	for _, opt := range opts {
+		opt.applyCheck(&cfg)
 	}
 
 	// checks are initially failing by default, but we allow overrides...
 	var initialErr error
-	if !cfg.InitiallyPassing {
+	if !cfg.initiallyPassing {
 		initialErr = fmt.Errorf(initialResultMsg)
 	}
 
-	result := h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
-	h.checksListener.OnCheckRegistered(cfg.Check.Name(), result)
-	h.scheduleCheck(h.createCheckTask(cfg.Check), cfg.InitialDelay, cfg.ExecutionPeriod)
+	result := h.updateResult(check.Name(), initialResultMsg, 0, initialErr, time.Now())
+	h.checksListener.OnCheckRegistered(check.Name(), result)
+	h.scheduleCheck(h.createCheckTask(check), cfg.initialDelay, cfg.executionPeriod)
 	return nil
 }
 
