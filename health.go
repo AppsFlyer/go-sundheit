@@ -63,19 +63,19 @@ func (h *health) RegisterCheck(cfg *Config) error {
 
 	result := h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
 	h.checksListener.OnCheckRegistered(cfg.Check.Name(), result)
-	h.scheduleCheck(h.createCheckTask(cfg), cfg)
+	h.scheduleCheck(h.createCheckTask(cfg.Check), cfg.InitialDelay, cfg.ExecutionPeriod)
 	return nil
 }
 
-func (h *health) createCheckTask(cfg *Config) *checkTask {
+func (h *health) createCheckTask(check Check) *checkTask {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	task := checkTask{
 		stopChan: make(chan bool, 1),
-		check:    cfg.Check,
+		check:    check,
 	}
-	h.checkTasks[cfg.Check.Name()] = task
+	h.checkTasks[check.Name()] = task
 
 	return &task
 }
@@ -92,15 +92,15 @@ func (h *health) stopCheckTask(name string) {
 	delete(h.checkTasks, name)
 }
 
-func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
+func (h *health) scheduleCheck(task *checkTask, initialDelay time.Duration, executionPeriod time.Duration) {
 	go func() {
 		// initial execution
-		if !h.runCheckOrStop(task, time.After(cfg.InitialDelay)) {
+		if !h.runCheckOrStop(task, time.After(initialDelay)) {
 			return
 		}
 		h.reportResults()
 		// scheduled recurring execution
-		task.ticker = time.NewTicker(cfg.ExecutionPeriod)
+		task.ticker = time.NewTicker(executionPeriod)
 		for {
 			if !h.runCheckOrStop(task, task.ticker.C) {
 				return
