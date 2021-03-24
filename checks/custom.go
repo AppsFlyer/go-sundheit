@@ -1,5 +1,7 @@
 package checks
 
+import "context"
+
 // CustomCheck is a simple Check implementation if all you need is a functional check
 type CustomCheck struct {
 	// CheckName s the name of the check.
@@ -17,7 +19,7 @@ func (check *CustomCheck) Name() string {
 }
 
 // Execute runs the given Checkfunc, and return it's output.
-func (check *CustomCheck) Execute() (details interface{}, err error) {
+func (check *CustomCheck) Execute(ctx context.Context) (details interface{}, err error) {
 	if check.CheckFunc == nil {
 		return "Unimplemented check", nil
 	}
