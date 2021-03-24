@@ -28,14 +28,14 @@ func TestNewPingCheck(t *testing.T) {
 
 	assertions.Equal(checkName, check.Name(), "check name")
 
-	_, err = check.Execute()
+	_, err = check.Execute(context.Background())
 	assertions.NoError(err)
 
 	check, err = NewPingCheck(checkName, mockPinger(true), time.Microsecond)
 	assertions.NoError(err, "check creation should succeed")
 	assertions.NotNil(check, "check creation should succeed")
 
-	_, err = check.Execute()
+	_, err = check.Execute(context.Background())
 	assertions.Error(err)
 }
 

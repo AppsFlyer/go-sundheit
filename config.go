@@ -12,6 +12,8 @@ type Config struct {
 	Check checks.Check
 	// ExecutionPeriod is the period between successive executions.
 	ExecutionPeriod time.Duration
+	// ExecutionTimeout is the maximum allowed execution time for a check. If this timeout is exceeded, the provided Context will be cancelled.
+	ExecutionTimeout time.Duration
 	// InitialDelay is the time to delay first execution; defaults to zero.
 	InitialDelay time.Duration
 	// InitiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false

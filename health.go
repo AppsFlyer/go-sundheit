@@ -1,8 +1,12 @@
 package gosundheit
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,7 +35,9 @@ type Health interface {
 
 // New returns a new Health instance.
 func New(opts ...Option) Health {
+	ctx, cancel := context.WithCancel(context.Background())
 	h := &health{
+		ctx:        ctx,
 		results:    make(map[string]Result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
 		lock:       sync.RWMutex{},
@@ -39,10 +45,14 @@ func New(opts ...Option) Health {
 	for _, opt := range append(opts, WithDefaults()) {
 		opt(h)
 	}
+
+	h.registerShutdownHook(cancel)
+
 	return h
 }
 
 type health struct {
+	ctx            context.Context
 	results        map[string]Result
 	checkTasks     map[string]checkTask
 	checksListener CheckListeners
@@ -72,8 +82,10 @@ func (h *health) createCheckTask(cfg *Config) *checkTask {
 	defer h.lock.Unlock()
 
 	task := checkTask{
-		stopChan: make(chan bool, 1),
-		check:    cfg.Check,
+		parentCtx: h.ctx,
+		timeout:   cfg.ExecutionTimeout,
+		stopChan:  make(chan bool, 1),
+		check:     cfg.Check,
 	}
 	h.checkTasks[cfg.Check.Name()] = task
 
@@ -208,4 +220,16 @@ func (h *health) updateResult(
 
 	h.results[name] = result
 	return result
+}
+
+func (h *health) registerShutdownHook(cancel context.CancelFunc) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		for range sigChan {
+			cancel()
+			return
+		}
+	}()
 }
