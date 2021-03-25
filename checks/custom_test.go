@@ -25,7 +25,7 @@ func TestExecute(t *testing.T) {
 
 	const expectedDetails = "my.details"
 	expectedErr := errors.New("my.error")
-	chk.CheckFunc = func() (details interface{}, err error) {
+	chk.CheckFunc = func(ctx context.Context) (details interface{}, err error) {
 		return expectedDetails, expectedErr
 	}
 

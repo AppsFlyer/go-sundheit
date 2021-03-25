@@ -1,6 +1,7 @@
 package gosundheit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -130,7 +131,7 @@ func TestRegisterDeregister(t *testing.T) {
 
 func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 	i := 0
-	checkFunc := func() (details interface{}, err error) {
+	checkFunc := func(ctx context.Context) (details interface{}, err error) {
 		i++
 
 		if passing {

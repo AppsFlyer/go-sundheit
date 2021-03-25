@@ -30,10 +30,8 @@ func NewPingCheck(name string, pinger Pinger, timeout time.Duration) (Check, err
 
 	return &CustomCheck{
 		CheckName: name,
-		CheckFunc: func() (details interface{}, err error) {
-			pingCtx, cancel := context.WithTimeout(context.Background(), timeout)
-			defer cancel()
-			return nil, pinger.PingContext(pingCtx)
+		CheckFunc: func(ctx context.Context) (details interface{}, err error) {
+			return nil, pinger.PingContext(ctx)
 		},
 	}, nil
 }

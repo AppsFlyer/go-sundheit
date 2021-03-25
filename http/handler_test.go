@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -115,7 +116,7 @@ func createCheck(name string, passing bool, delay time.Duration) *gosundheit.Con
 		ExecutionPeriod: delay,
 		Check: &checks.CustomCheck{
 			CheckName: name,
-			CheckFunc: func() (details interface{}, err error) {
+			CheckFunc: func(ctx context.Context) (details interface{}, err error) {
 				if passing {
 					return "pass", nil
 				}

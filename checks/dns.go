@@ -23,10 +23,7 @@ type LookupFunc func(ctx context.Context, lookFor string) (resolvedCount int, er
 func NewResolveCheck(lookupFn LookupFunc, resolveThis string, timeout time.Duration, minRequiredResults int) Check {
 	return &CustomCheck{
 		CheckName: "resolve." + resolveThis,
-		CheckFunc: func() (details interface{}, err error) {
-			ctx, cancel := context.WithTimeout(context.TODO(), timeout)
-			defer cancel()
-
+		CheckFunc: func(ctx context.Context) (details interface{}, err error) {
 			resolvedCount, err := lookupFn(ctx, resolveThis)
 			details = fmt.Sprintf("[%d] results were resolved", resolvedCount)
 			if err != nil {
@@ -35,7 +32,6 @@ func NewResolveCheck(lookupFn LookupFunc, resolveThis string, timeout time.Durat
 			if resolvedCount < minRequiredResults {
 				err = errors.Errorf("[%s] lookup returned %d results, but requires at least %d", resolveThis, resolvedCount, minRequiredResults)
 			}
-
 			return
 		},
 	}
