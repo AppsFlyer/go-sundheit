@@ -50,6 +50,16 @@ func (req *receivedRequest) clear() {
 	req.details = make(map[string]string, 2)
 }
 
+func TestHTTPCheckName(t *testing.T) {
+	name := "http-check"
+	check, err := NewHTTPCheck(HTTPCheckConfig{
+		CheckName: name,
+		URL:       "http://example.org",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, name, check.Name())
+}
+
 func TestNewHttpCheckRequiredFields(t *testing.T) {
 	check, err := NewHTTPCheck(HTTPCheckConfig{
 		CheckName: "meh",
