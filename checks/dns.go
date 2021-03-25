@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/pkg/errors"
 )
 
 // NewHostResolveCheck returns a Check that makes sure the provided host can resolve
 // to at least `minRequiredResults` IP address within the specified timeout.
-func NewHostResolveCheck(host string, timeout time.Duration, minRequiredResults int) Check {
-	return NewResolveCheck(NewHostLookup(nil), host, timeout, minRequiredResults)
+func NewHostResolveCheck(host string, minRequiredResults int) Check {
+	return NewResolveCheck(NewHostLookup(nil), host, minRequiredResults)
 }
 
 // LookupFunc is a function that is used for looking up something (in DNS) and return the resolved results count, and a possible error
@@ -20,7 +19,7 @@ type LookupFunc func(ctx context.Context, lookFor string) (resolvedCount int, er
 
 // NewResolveCheck returns a Check that makes sure the `resolveThis` arg can be resolved using the `lookupFn`
 // to at least `minRequiredResults` result within the specified timeout.
-func NewResolveCheck(lookupFn LookupFunc, resolveThis string, timeout time.Duration, minRequiredResults int) Check {
+func NewResolveCheck(lookupFn LookupFunc, resolveThis string, minRequiredResults int) Check {
 	return &CustomCheck{
 		CheckName: "resolve." + resolveThis,
 		CheckFunc: func(ctx context.Context) (details interface{}, err error) {
