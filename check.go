@@ -1,4 +1,4 @@
-package checks
+package gosundheit
 
 // Check is the API for defining health checks.
 // A valid check has a non empty Name() and a check (Execute()) function.

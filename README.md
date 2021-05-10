@@ -153,7 +153,7 @@ The `NewDialPinger` function supports all the network/address parameters support
 
 ### Custom Checks
 The library provides 2 means of defining a custom check.
-The bottom line is that you need an implementation of the `checks.Check` interface:
+The bottom line is that you need an implementation of the `Check` interface:
 ```go
 // Check is the API for defining health checks.
 // A valid check has a non empty Name() and a check (Execute()) function.
@@ -201,7 +201,7 @@ h.RegisterCheck(&gosundheit.Config{
 #### Implement the Check interface
 Sometimes you need to define a more elaborate custom check.
 For example when you need to manage state.
-For these cases it's best to implement the `checks.Check` interface yourself.
+For these cases it's best to implement the `Check` interface yourself.
 
 Let's define a flexible example of the lottery check, that allows you to define a fail probability:
 ```go
