@@ -58,7 +58,7 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	}
 	assert.Equal(t, &expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(11 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	resp = execReq(h, true)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
@@ -88,7 +88,7 @@ func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	expectedResponse := map[string]string{"check1": "FAIL"}
 	assert.Equal(t, expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(11 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	resp = execReq(h, false)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
