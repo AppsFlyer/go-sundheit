@@ -58,11 +58,11 @@ func main() {
   // Alternatively panic when creating a check fails
   httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
 
-  err = h.RegisterCheck(&gosundheit.Config{
-    Check:           httpCheck, 
-    InitialDelay:    time.Second,      // the check will run once after 1 sec
-    ExecutionPeriod: 10 * time.Second, // the check will be executed every 10 sec
-  })
+  err = h.RegisterCheck(
+    httpCheck,
+    gosundheit.InitialDelay(time.Second),         // the check will run once after 1 sec
+    gosundheit.ExecutionPeriod(10 * time.Second), // the check will be executed every 10 sec
+  )
   
   if err != nil {
     fmt.Println("Failed to register check: ", err)
@@ -104,10 +104,10 @@ and validate that it resolves to at least the minimum number of required results
 Creating a host lookup check is easy:
 ```go
 // Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
-h.RegisterCheck(&gosundheit.Config{
-  Check:           checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
-  ExecutionPeriod: 10 * time.Second,
-})
+h.RegisterCheck(
+  checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
+  gosundheit.ExecutionPeriod(10 * time.Second),
+)
 ```
 
 You may also use the low level `checks.NewResolveCheck` specifying a custom `LookupFunc` if you want to to perform other kinds of lookups.
@@ -121,10 +121,10 @@ func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err e
 
 //...
 
-h.RegisterCheck(&gosundheit.Config{
-  Check:           checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
-  ExecutionPeriod: 10 * time.Second,
-})
+h.RegisterCheck(
+  checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
+  gosundheit.ExecutionPeriod(10 * time.Second),
+)
 ```
 
 #### Ping built-in check(s)
@@ -143,10 +143,7 @@ You can also use the ping check to test a generic connection like so:
 ```go
 	pinger := checks.NewDialPinger("tcp", "example.com")
 	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger, time.Second)
-	h.RegisterCheck(&gosundheit.Config{
-		Check: pingCheck,
-		// ...
-	})
+	h.RegisterCheck(pingCheck)
 ``` 
 
 The `NewDialPinger` function supports all the network/address parameters supported by the `net.Dial()` function(s)
@@ -188,14 +185,14 @@ Now we register the check to start running right away, and execute once per 2 mi
 h := gosundheit.New()
 ...
 
-h.RegisterCheck(&gosundheit.Config{
-  Check: &checks.CustomCheck{
+h.RegisterCheck(
+  &checks.CustomCheck{
     CheckName: "lottery.check",
     CheckFunc: lotteryCheck,
   },
-  InitialDelay:    0,
-  ExecutionPeriod: 2 * time.Minute,
-})
+  gosundheit.InitialDelay(0),
+  gosundheit.ExecutionPeriod(2 * time.Minute),
+)
 ```
 
 #### Implement the Check interface
@@ -229,11 +226,11 @@ And register our custom check, scheduling it to run after 1 sec, and every 30 se
 h := gosundheit.New()
 ...
 
-h.RegisterCheck(&gosundheit.Config{
-  Check: Lottery{myname: "custom.lottery.check", probability:0.3,},
-  InitialDelay: 1*time.Second,
-  ExecutionPeriod: 30*time.Second,
-})
+h.RegisterCheck(
+  Lottery{myname: "custom.lottery.check", probability:0.3},
+  gosundheit.InitialDelay(1*time.Second),
+  gosundheit.ExecutionPeriod(30*time.Second),
+)
 ```
 
 #### Custom Checks Notes

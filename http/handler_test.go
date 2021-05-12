@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AppsFlyer/go-sundheit"
+	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +36,10 @@ func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	h := gosundheit.New()
 
-	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(
+		createCheck("check1", true),
+		createCheckOptions(10*time.Millisecond)...,
+	)
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
@@ -75,7 +78,10 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	h := gosundheit.New()
 
-	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(
+		createCheck("check1", true),
+		createCheckOptions(10*time.Millisecond)...,
+	)
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
@@ -109,19 +115,22 @@ func unmarshalLongFormat(r io.Reader) *response {
 	return &respMsg
 }
 
-func createCheck(name string, passing bool, delay time.Duration) *gosundheit.Config {
-	return &gosundheit.Config{
-		InitialDelay:    delay,
-		ExecutionPeriod: delay,
-		Check: &checks.CustomCheck{
-			CheckName: name,
-			CheckFunc: func() (details interface{}, err error) {
-				if passing {
-					return "pass", nil
-				}
-				return "failing", fmt.Errorf("failing")
-			},
+func createCheck(name string, passing bool) gosundheit.Check {
+	return &checks.CustomCheck{
+		CheckName: name,
+		CheckFunc: func() (details interface{}, err error) {
+			if passing {
+				return "pass", nil
+			}
+			return "failing", fmt.Errorf("failing")
 		},
+	}
+}
+
+func createCheckOptions(delay time.Duration) []gosundheit.CheckOption {
+	return []gosundheit.CheckOption{
+		gosundheit.InitialDelay(delay),
+		gosundheit.ExecutionPeriod(delay),
 	}
 }
 
