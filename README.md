@@ -24,58 +24,58 @@ go get github.com/AppsFlyer/go-sundheit@v0.3.1
 ## Usage
 ```go
 import (
-  "net/http"
-  "time"
-  "log"
+	"net/http"
+	"time"
+	"log"
 
-  "github.com/pkg/errors"
-  "github.com/AppsFlyer/go-sundheit"
+	"github.com/pkg/errors"
+	"github.com/AppsFlyer/go-sundheit"
 
-  healthhttp "github.com/AppsFlyer/go-sundheit/http"
-  "github.com/AppsFlyer/go-sundheit/checks"
+	healthhttp "github.com/AppsFlyer/go-sundheit/http"
+	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 func main() {
-  // create a new health instance
-  h := gosundheit.New()
-  
-  // define an HTTP dependency check
-  httpCheckConf := checks.HTTPCheckConfig{
-    CheckName: "httpbin.url.check",
-    Timeout:   1 * time.Second,
-    // dependency you're checking - use your own URL here...
-    // this URL will fail 50% of the times
-    URL:       "http://httpbin.org/status/200,300",
-  }
-  // create the HTTP check for the dependency
-  // fail fast when you misconfigured the URL. Don't ignore errors!!!
-  httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
-  if err != nil {
-    fmt.Println(err)
-    return // your call...
-  }
+	// create a new health instance
+	h := gosundheit.New()
+	
+	// define an HTTP dependency check
+	httpCheckConf := checks.HTTPCheckConfig{
+		CheckName: "httpbin.url.check",
+		Timeout:   1 * time.Second,
+		// dependency you're checking - use your own URL here...
+		// this URL will fail 50% of the times
+		URL:       "http://httpbin.org/status/200,300",
+	}
+	// create the HTTP check for the dependency
+	// fail fast when you misconfigured the URL. Don't ignore errors!!!
+	httpCheck, err := checks.NewHTTPCheck(httpCheckConf)
+	if err != nil {
+		fmt.Println(err)
+		return // your call...
+	}
 
-  // Alternatively panic when creating a check fails
-  httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
+	// Alternatively panic when creating a check fails
+	httpCheck = checks.Must(checks.NewHTTPCheck(httpCheckConf))
 
-  err = h.RegisterCheck(
-    httpCheck,
-    gosundheit.InitialDelay(time.Second),         // the check will run once after 1 sec
-    gosundheit.ExecutionPeriod(10 * time.Second), // the check will be executed every 10 sec
-  )
-  
-  if err != nil {
-    fmt.Println("Failed to register check: ", err)
-    return // or whatever
-  }
+	err = h.RegisterCheck(
+		httpCheck,
+		gosundheit.InitialDelay(time.Second),         // the check will run once after 1 sec
+		gosundheit.ExecutionPeriod(10 * time.Second), // the check will be executed every 10 sec
+	)
+	
+	if err != nil {
+		fmt.Println("Failed to register check: ", err)
+		return // or whatever
+	}
 
-  // define more checks...
-  
-  // register a health endpoint
-  http.Handle("/admin/health.json", healthhttp.HandleHealthJSON(h))
-  
-  // serve HTTP
-  log.Fatal(http.ListenAndServe(":8080", nil))
+	// define more checks...
+	
+	// register a health endpoint
+	http.Handle("/admin/health.json", healthhttp.HandleHealthJSON(h))
+	
+	// serve HTTP
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
 ### Using `Option` to Configure `Health` Service
@@ -105,8 +105,8 @@ Creating a host lookup check is easy:
 ```go
 // Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
 h.RegisterCheck(
-  checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
-  gosundheit.ExecutionPeriod(10 * time.Second),
+	checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
+	gosundheit.ExecutionPeriod(10 * time.Second),
 )
 ```
 
@@ -114,16 +114,16 @@ You may also use the low level `checks.NewResolveCheck` specifying a custom `Loo
 For example you may register a reverse DNS lookup check like so:
 ```go
 func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err error) {
-  names, err := net.DefaultResolver.LookupAddr(ctx, addr)
-  resolvedCount = len(names)
-  return
+	names, err := net.DefaultResolver.LookupAddr(ctx, addr)
+	resolvedCount = len(names)
+	return
 }
 
 //...
 
 h.RegisterCheck(
-  checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
-  gosundheit.ExecutionPeriod(10 * time.Second),
+	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
+	gosundheit.ExecutionPeriod(10 * time.Second),
 )
 ```
 
@@ -186,12 +186,12 @@ h := gosundheit.New()
 ...
 
 h.RegisterCheck(
-  &checks.CustomCheck{
-    CheckName: "lottery.check",
-    CheckFunc: lotteryCheck,
-  },
-  gosundheit.InitialDelay(0),
-  gosundheit.ExecutionPeriod(2 * time.Minute),
+	&checks.CustomCheck{
+		CheckName: "lottery.check",
+		CheckFunc: lotteryCheck,
+	},
+	gosundheit.InitialDelay(0),
+	gosundheit.ExecutionPeriod(2 * time.Minute),
 )
 ```
 
@@ -227,9 +227,9 @@ h := gosundheit.New()
 ...
 
 h.RegisterCheck(
-  Lottery{myname: "custom.lottery.check", probability:0.3},
-  gosundheit.InitialDelay(1*time.Second),
-  gosundheit.ExecutionPeriod(30*time.Second),
+	Lottery{myname: "custom.lottery.check", probability:0.3},
+	gosundheit.InitialDelay(1*time.Second),
+	gosundheit.ExecutionPeriod(30*time.Second),
 )
 ```
 
@@ -315,7 +315,7 @@ For example, lets add a logging listener to our health repository:
 type checkEventsLogger struct{}
 
 func (l checkEventsLogger) OnCheckRegistered(name string, res gosundheit.Result) {
-    log.Printf("Check %q registered with initial result: %v\n", name, res)
+	log.Printf("Check %q registered with initial result: %v\n", name, res)
 }
 
 func (l checkEventsLogger) OnCheckStarted(name string) {
