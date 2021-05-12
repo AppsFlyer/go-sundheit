@@ -60,15 +60,7 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 		return errors.Errorf("misconfigured check %v", check)
 	}
 
-	cfg := checkConfig{
-		executionPeriod:  h.defaultExecutionPeriod,
-		initialDelay:     h.defaultInitialDelay,
-		initiallyPassing: h.defaultInitiallyPassing,
-	}
-
-	for _, opt := range opts {
-		opt.applyCheck(&cfg)
-	}
+	cfg := h.initCheckConfig(opts)
 
 	// checks are initially failing by default, but we allow overrides...
 	var initialErr error
@@ -80,6 +72,20 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 	h.checksListener.OnCheckRegistered(check.Name(), result)
 	h.scheduleCheck(h.createCheckTask(check), cfg.initialDelay, cfg.executionPeriod)
 	return nil
+}
+
+func (h *health) initCheckConfig(opts []CheckOption) checkConfig {
+	cfg := checkConfig{
+		executionPeriod:  h.defaultExecutionPeriod,
+		initialDelay:     h.defaultInitialDelay,
+		initiallyPassing: h.defaultInitiallyPassing,
+	}
+
+	for _, opt := range opts {
+		opt.applyCheck(&cfg)
+	}
+
+	return cfg
 }
 
 func (h *health) createCheckTask(check Check) *checkTask {
