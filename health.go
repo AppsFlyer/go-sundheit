@@ -70,7 +70,7 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 
 	result := h.updateResult(check.Name(), initialResultMsg, 0, initialErr, time.Now())
 	h.checksListener.OnCheckRegistered(check.Name(), result)
-	h.scheduleCheck(h.createCheckTask(check), cfg.initialDelay, cfg.executionPeriod)
+	h.scheduleCheck(h.createCheckTask(check), cfg)
 	return nil
 }
 
@@ -113,15 +113,15 @@ func (h *health) stopCheckTask(name string) {
 	delete(h.checkTasks, name)
 }
 
-func (h *health) scheduleCheck(task *checkTask, initialDelay time.Duration, executionPeriod time.Duration) {
+func (h *health) scheduleCheck(task *checkTask, cfg checkConfig) {
 	go func() {
 		// initial execution
-		if !h.runCheckOrStop(task, time.After(initialDelay)) {
+		if !h.runCheckOrStop(task, time.After(cfg.initialDelay)) {
 			return
 		}
 		h.reportResults()
 		// scheduled recurring execution
-		task.ticker = time.NewTicker(executionPeriod)
+		task.ticker = time.NewTicker(cfg.executionPeriod)
 		for {
 			if !h.runCheckOrStop(task, task.ticker.C) {
 				return
