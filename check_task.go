@@ -3,16 +3,12 @@ package gosundheit
 import (
 	"context"
 	"time"
-
-	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
 type checkTask struct {
-	parentCtx context.Context
-	timeout   time.Duration
-	stopChan  chan bool
-	ticker    *time.Ticker
-	check     checks.Check
+	stopChan chan bool
+	ticker   *time.Ticker
+	check    Check
 }
 
 func (t *checkTask) stop() {
@@ -21,19 +17,12 @@ func (t *checkTask) stop() {
 	}
 }
 
-func (t *checkTask) execute() (details interface{}, duration time.Duration, err error) {
+func (t *checkTask) execute(ctx context.Context) (details interface{}, duration time.Duration, err error) {
 	startTime := time.Now()
-	ctx, cancel := getContext(t.parentCtx, t.timeout)
-	defer cancel()
+	//ctx, cancel := getContext(t.parentCtx, t.timeout)
+	//defer cancel()
 	details, err = t.check.Execute(ctx)
 	duration = time.Since(startTime)
 
 	return
-}
-
-func getContext(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
-	if t == 0 {
-		return context.WithCancel(parent)
-	}
-	return context.WithTimeout(parent, t)
 }

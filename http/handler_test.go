@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AppsFlyer/go-sundheit"
+	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +37,10 @@ func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	h := gosundheit.New()
 
-	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(
+		createCheck("check1", true),
+		createCheckOptions(10*time.Millisecond)...,
+	)
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
@@ -59,7 +62,7 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	}
 	assert.Equal(t, &expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(11 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	resp = execReq(h, true)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
@@ -76,7 +79,10 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	h := gosundheit.New()
 
-	err := h.RegisterCheck(createCheck("check1", true, 10*time.Millisecond))
+	err := h.RegisterCheck(
+		createCheck("check1", true),
+		createCheckOptions(10*time.Millisecond)...,
+	)
 	if err != nil {
 		t.Error("Failed to register check: ", err)
 	}
@@ -89,7 +95,7 @@ func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	expectedResponse := map[string]string{"check1": "FAIL"}
 	assert.Equal(t, expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(11 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	resp = execReq(h, false)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
@@ -110,19 +116,22 @@ func unmarshalLongFormat(r io.Reader) *response {
 	return &respMsg
 }
 
-func createCheck(name string, passing bool, delay time.Duration) *gosundheit.Config {
-	return &gosundheit.Config{
-		InitialDelay:    delay,
-		ExecutionPeriod: delay,
-		Check: &checks.CustomCheck{
-			CheckName: name,
-			CheckFunc: func(ctx context.Context) (details interface{}, err error) {
-				if passing {
-					return "pass", nil
-				}
-				return "failing", fmt.Errorf("failing")
-			},
+func createCheck(name string, passing bool) gosundheit.Check {
+	return &checks.CustomCheck{
+		CheckName: name,
+		CheckFunc: func(ctx context.Context) (details interface{}, err error) {
+			if passing {
+				return "pass", nil
+			}
+			return "failing", fmt.Errorf("failing")
 		},
+	}
+}
+
+func createCheckOptions(delay time.Duration) []gosundheit.CheckOption {
+	return []gosundheit.CheckOption{
+		gosundheit.InitialDelay(delay),
+		gosundheit.ExecutionPeriod(delay),
 	}
 }
 

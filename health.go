@@ -17,7 +17,7 @@ type Health interface {
 	// RegisterCheck registers a health check according to the given configuration.
 	// Once RegisterCheck() is called, the check is scheduled to run in it's own goroutine.
 	// Callers must make sure the checks complete at a reasonable time frame, or the next execution will delay.
-	RegisterCheck(cfg *Config) error
+	RegisterCheck(check Check, opts ...CheckOption) error
 	// Deregister removes a health check from this instance, and stops it's next executions.
 	// If the check is running while Deregister() is called, the check may complete it's current execution.
 	// Once a check is removed, it's results are no longer returned.
@@ -34,19 +34,20 @@ type Health interface {
 }
 
 // New returns a new Health instance.
-func New(opts ...Option) Health {
-	ctx, cancel := context.WithCancel(context.Background())
+func New(opts ...HealthOption) Health {
 	h := &health{
-		ctx:        ctx,
 		results:    make(map[string]Result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
-		lock:       sync.RWMutex{},
 	}
 	for _, opt := range append(opts, WithDefaults()) {
-		opt(h)
+		opt.apply(h)
 	}
 
-	h.registerShutdownHook(cancel)
+	if h.ctx == nil {
+		ctx, cancel := context.WithCancel(context.Background())
+		h.ctx = ctx
+		h.registerShutdownHook(cancel)
+	}
 
 	return h
 }
@@ -58,36 +59,55 @@ type health struct {
 	checksListener CheckListeners
 	healthListener HealthListeners
 	lock           sync.RWMutex
+
+	// Check config defaults
+	defaultExecutionPeriod  time.Duration
+	defaultInitialDelay     time.Duration
+	defaultInitiallyPassing bool
 }
 
-func (h *health) RegisterCheck(cfg *Config) error {
-	if cfg.Check == nil || cfg.Check.Name() == "" {
-		return errors.Errorf("misconfigured check %v", cfg.Check)
+func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
+	if check == nil || check.Name() == "" {
+		return errors.Errorf("misconfigured check %v", check)
 	}
+
+	cfg := h.initCheckConfig(opts)
 
 	// checks are initially failing by default, but we allow overrides...
 	var initialErr error
-	if !cfg.InitiallyPassing {
+	if !cfg.initiallyPassing {
 		initialErr = fmt.Errorf(initialResultMsg)
 	}
 
-	result := h.updateResult(cfg.Check.Name(), initialResultMsg, 0, initialErr, time.Now())
-	h.checksListener.OnCheckRegistered(cfg.Check.Name(), result)
-	h.scheduleCheck(h.createCheckTask(cfg), cfg)
+	result := h.updateResult(check.Name(), initialResultMsg, 0, initialErr, time.Now())
+	h.checksListener.OnCheckRegistered(check.Name(), result)
+	h.scheduleCheck(h.createCheckTask(check), cfg)
 	return nil
 }
 
-func (h *health) createCheckTask(cfg *Config) *checkTask {
+func (h *health) initCheckConfig(opts []CheckOption) checkConfig {
+	cfg := checkConfig{
+		executionPeriod:  h.defaultExecutionPeriod,
+		initialDelay:     h.defaultInitialDelay,
+		initiallyPassing: h.defaultInitiallyPassing,
+	}
+
+	for _, opt := range opts {
+		opt.applyCheck(&cfg)
+	}
+
+	return cfg
+}
+
+func (h *health) createCheckTask(check Check) *checkTask {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	task := checkTask{
-		parentCtx: h.ctx,
-		timeout:   cfg.ExecutionTimeout,
-		stopChan:  make(chan bool, 1),
-		check:     cfg.Check,
+		stopChan: make(chan bool, 1),
+		check:    check,
 	}
-	h.checkTasks[cfg.Check.Name()] = task
+	h.checkTasks[check.Name()] = task
 
 	return &task
 }
@@ -104,17 +124,17 @@ func (h *health) stopCheckTask(name string) {
 	delete(h.checkTasks, name)
 }
 
-func (h *health) scheduleCheck(task *checkTask, cfg *Config) {
+func (h *health) scheduleCheck(task *checkTask, cfg checkConfig) {
 	go func() {
 		// initial execution
-		if !h.runCheckOrStop(task, time.After(cfg.InitialDelay)) {
+		if !h.runCheckOrStop(task, cfg.executionTimeout, time.After(cfg.initialDelay)) {
 			return
 		}
 		h.reportResults()
 		// scheduled recurring execution
-		task.ticker = time.NewTicker(cfg.ExecutionPeriod)
+		task.ticker = time.NewTicker(cfg.executionPeriod)
 		for {
-			if !h.runCheckOrStop(task, task.ticker.C) {
+			if !h.runCheckOrStop(task, cfg.executionTimeout, task.ticker.C) {
 				return
 			}
 			h.reportResults()
@@ -129,20 +149,22 @@ func (h *health) reportResults() {
 	h.healthListener.OnResultsUpdated(resultsCopy)
 }
 
-func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) bool {
+func (h *health) runCheckOrStop(task *checkTask, timeout time.Duration, timerChan <-chan time.Time) bool {
+	ctx, cancel := getContext(h.ctx, timeout)
+	defer cancel()
 	select {
 	case <-task.stopChan:
 		h.stopCheckTask(task.check.Name())
 		return false
 	case t := <-timerChan:
-		h.checkAndUpdateResult(task, t)
+		h.checkAndUpdateResult(ctx, task, t)
 		return true
 	}
 }
 
-func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
+func (h *health) checkAndUpdateResult(ctx context.Context, task *checkTask, checkTime time.Time) {
 	h.checksListener.OnCheckStarted(task.check.Name())
-	details, duration, err := task.execute()
+	details, duration, err := task.execute(ctx)
 	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
 	h.checksListener.OnCheckCompleted(task.check.Name(), result)
 }
@@ -232,4 +254,11 @@ func (h *health) registerShutdownHook(cancel context.CancelFunc) {
 			return
 		}
 	}()
+}
+
+func getContext(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
+	if t == 0 {
+		return context.WithCancel(parent)
+	}
+	return context.WithTimeout(parent, t)
 }

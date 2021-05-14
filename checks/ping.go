@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +24,7 @@ func (f PingContextFunc) PingContext(ctx context.Context) error {
 }
 
 // NewPingCheck returns a Check that pings using the specified Pinger and fails on timeout or ping failure
-func NewPingCheck(name string, pinger Pinger, timeout time.Duration) (Check, error) {
+func NewPingCheck(name string, pinger Pinger, timeout time.Duration) (gosundheit.Check, error) {
 	if pinger == nil {
 		return nil, errors.New("Pinger must not be nil")
 	}

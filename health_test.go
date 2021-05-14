@@ -1,4 +1,4 @@
-package gosundheit
+package gosundheit_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	. "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 )
 
@@ -39,10 +40,7 @@ func TestHealthWithEmptySetup(t *testing.T) {
 func TestHealthWithBogusCheck(t *testing.T) {
 	h := New()
 
-	err := h.RegisterCheck(&Config{
-		ExecutionPeriod: 1,
-		InitialDelay:    1,
-	})
+	err := h.RegisterCheck(nil)
 	defer h.DeregisterAll()
 
 	assert.Error(t, err, "register bogus check should fail")
@@ -141,15 +139,15 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 		return fmt.Sprintf("%s; i=%d", failedMsg, i), errors.New(failedMsg)
 	}
 
-	_ = h.RegisterCheck(&Config{
-		Check: &checks.CustomCheck{
+	_ = h.RegisterCheck(
+		&checks.CustomCheck{
 			CheckName: name,
 			CheckFunc: checkFunc,
 		},
-		InitialDelay:     20 * time.Millisecond,
-		ExecutionPeriod:  20 * time.Millisecond,
-		InitiallyPassing: initiallyPassing,
-	})
+		InitialDelay(20*time.Millisecond),
+		ExecutionPeriod(20*time.Millisecond),
+		InitiallyPassing(initiallyPassing),
+	)
 }
 
 func TestCheckListener(t *testing.T) {
