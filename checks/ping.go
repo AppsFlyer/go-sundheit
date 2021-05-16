@@ -3,10 +3,10 @@ package checks
 import (
 	"context"
 	"net"
-	"time"
+
+	"github.com/pkg/errors"
 
 	gosundheit "github.com/AppsFlyer/go-sundheit"
-	"github.com/pkg/errors"
 )
 
 // Pinger verifies a resource is still alive.
@@ -23,8 +23,8 @@ func (f PingContextFunc) PingContext(ctx context.Context) error {
 	return f(ctx)
 }
 
-// NewPingCheck returns a Check that pings using the specified Pinger and fails on timeout or ping failure
-func NewPingCheck(name string, pinger Pinger, timeout time.Duration) (gosundheit.Check, error) {
+// NewPingCheck returns a Check that pings using the specified Pinger and fails on context cancellation or ping failure
+func NewPingCheck(name string, pinger Pinger) (gosundheit.Check, error) {
 	if pinger == nil {
 		return nil, errors.New("Pinger must not be nil")
 	}

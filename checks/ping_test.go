@@ -14,7 +14,7 @@ const (
 )
 
 func TestNewPingCheck_nilPinger(t *testing.T) {
-	check, err := NewPingCheck(checkName, nil, time.Second)
+	check, err := NewPingCheck(checkName, nil)
 	assert.Error(t, err, "check creation should fail for nil pinger")
 	assert.Nil(t, check, "check creation should fail for nil pinger")
 }
@@ -22,7 +22,7 @@ func TestNewPingCheck_nilPinger(t *testing.T) {
 func TestNewPingCheck(t *testing.T) {
 	assertions := assert.New(t)
 
-	check, err := NewPingCheck(checkName, mockPinger(false), time.Microsecond)
+	check, err := NewPingCheck(checkName, mockPinger(false))
 	assertions.NoError(err, "check creation should succeed")
 	assertions.NotNil(check, "check creation should succeed")
 
@@ -31,11 +31,13 @@ func TestNewPingCheck(t *testing.T) {
 	_, err = check.Execute(context.Background())
 	assertions.NoError(err)
 
-	check, err = NewPingCheck(checkName, mockPinger(true), time.Microsecond)
+	check, err = NewPingCheck(checkName, mockPinger(true))
 	assertions.NoError(err, "check creation should succeed")
 	assertions.NotNil(check, "check creation should succeed")
 
-	_, err = check.Execute(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Microsecond)
+	defer cancel()
+	_, err = check.Execute(ctx)
 	assertions.Error(err)
 }
 

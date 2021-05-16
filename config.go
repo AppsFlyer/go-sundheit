@@ -15,7 +15,7 @@ type checkConfig struct {
 	// initiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false
 	initiallyPassing bool
 
-	// ExecutionTimeout is the maximum allowed execution time for a check. If this timeout is exceeded, the provided Context will be cancelled.
+	// executionTimeout is the maximum allowed execution time for a check. If this timeout is exceeded, the provided Context will be cancelled.
 	// defaults to no timeout.
 	executionTimeout time.Duration
 }

@@ -11,7 +11,7 @@ import (
 )
 
 // NewHostResolveCheck returns a gosundheit.Check that makes sure the provided host can resolve
-// to at least `minRequiredResults` IP address within the specified timeout.
+// to at least `minRequiredResults` IP address within the timeout specified by the provided context..
 func NewHostResolveCheck(host string, minRequiredResults int) gosundheit.Check {
 	return NewResolveCheck(NewHostLookup(nil), host, minRequiredResults)
 }
@@ -20,7 +20,7 @@ func NewHostResolveCheck(host string, minRequiredResults int) gosundheit.Check {
 type LookupFunc func(ctx context.Context, lookFor string) (resolvedCount int, err error)
 
 // NewResolveCheck returns a gosundheit.Check that makes sure the `resolveThis` arg can be resolved using the `lookupFn`
-// to at least `minRequiredResults` result within the specified timeout.
+// to at least `minRequiredResults` result, within the timeout specified by the provided context.
 func NewResolveCheck(lookupFn LookupFunc, resolveThis string, minRequiredResults int) gosundheit.Check {
 	return &CustomCheck{
 		CheckName: "resolve." + resolveThis,

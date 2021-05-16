@@ -124,6 +124,7 @@ func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err e
 h.RegisterCheck(
 	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
 	gosundheit.ExecutionPeriod(10 * time.Second),
+	gosundheit.ExecutionTimeout(1*time.Second)
 )
 ```
 
@@ -180,7 +181,7 @@ func lotteryCheck() (details interface{}, err error) {
 }
 ```
 
-Now we register the check to start running right away, and execute once per 2 minutes:
+Now we register the check to start running right away, and execute once per 2 minutes with a timeout of 5 seconds:
 ```go
 h := gosundheit.New()
 ...
@@ -192,6 +193,7 @@ h.RegisterCheck(
 	},
 	gosundheit.InitialDelay(0),
 	gosundheit.ExecutionPeriod(2 * time.Minute),
+    gosundheit.ExecutionTimeout(5 * time.Second)
 )
 ```
 
@@ -221,7 +223,7 @@ func (l Lottery) Name() string {
 }
 ```
 
-And register our custom check, scheduling it to run after 1 sec, and every 30 sec:
+And register our custom check, scheduling it to run after 1 sec, every 30 sec, with a 5 seconds timeout:
 ```go
 h := gosundheit.New()
 ...
@@ -230,6 +232,7 @@ h.RegisterCheck(
 	Lottery{myname: "custom.lottery.check", probability:0.3},
 	gosundheit.InitialDelay(1*time.Second),
 	gosundheit.ExecutionPeriod(30*time.Second),
+	gosundheit.ExecutionTimeout(5*time.Second)
 )
 ```
 
