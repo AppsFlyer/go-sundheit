@@ -9,6 +9,7 @@ type checkTask struct {
 	stopChan chan bool
 	ticker   *time.Ticker
 	check    Check
+	timeout  time.Duration
 }
 
 func (t *checkTask) stop() {

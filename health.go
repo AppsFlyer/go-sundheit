@@ -81,7 +81,7 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 
 	result := h.updateResult(check.Name(), initialResultMsg, 0, initialErr, time.Now())
 	h.checksListener.OnCheckRegistered(check.Name(), result)
-	h.scheduleCheck(h.createCheckTask(check), cfg)
+	h.scheduleCheck(h.createCheckTask(check, cfg.executionTimeout), cfg.initialDelay, cfg.executionPeriod)
 	return nil
 }
 
@@ -99,13 +99,14 @@ func (h *health) initCheckConfig(opts []CheckOption) checkConfig {
 	return cfg
 }
 
-func (h *health) createCheckTask(check Check) *checkTask {
+func (h *health) createCheckTask(check Check, timeout time.Duration) *checkTask {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	task := checkTask{
 		stopChan: make(chan bool, 1),
 		check:    check,
+		timeout:  timeout,
 	}
 	h.checkTasks[check.Name()] = task
 
@@ -124,17 +125,17 @@ func (h *health) stopCheckTask(name string) {
 	delete(h.checkTasks, name)
 }
 
-func (h *health) scheduleCheck(task *checkTask, cfg checkConfig) {
+func (h *health) scheduleCheck(task *checkTask, initialDelay, executionPeriod time.Duration) {
 	go func() {
 		// initial execution
-		if !h.runCheckOrStop(task, cfg.executionTimeout, time.After(cfg.initialDelay)) {
+		if !h.runCheckOrStop(task, time.After(initialDelay)) {
 			return
 		}
 		h.reportResults()
 		// scheduled recurring execution
-		task.ticker = time.NewTicker(cfg.executionPeriod)
+		task.ticker = time.NewTicker(executionPeriod)
 		for {
-			if !h.runCheckOrStop(task, cfg.executionTimeout, task.ticker.C) {
+			if !h.runCheckOrStop(task, task.ticker.C) {
 				return
 			}
 			h.reportResults()
@@ -149,20 +150,20 @@ func (h *health) reportResults() {
 	h.healthListener.OnResultsUpdated(resultsCopy)
 }
 
-func (h *health) runCheckOrStop(task *checkTask, timeout time.Duration, timerChan <-chan time.Time) bool {
-	ctx, cancel := getContext(h.ctx, timeout)
-	defer cancel()
+func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) bool {
 	select {
 	case <-task.stopChan:
 		h.stopCheckTask(task.check.Name())
 		return false
 	case t := <-timerChan:
-		h.checkAndUpdateResult(ctx, task, t)
+		h.checkAndUpdateResult(task, t)
 		return true
 	}
 }
 
-func (h *health) checkAndUpdateResult(ctx context.Context, task *checkTask, checkTime time.Time) {
+func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
+	ctx, cancel := getContext(h.ctx, task.timeout)
+	defer cancel()
 	h.checksListener.OnCheckStarted(task.check.Name())
 	details, duration, err := task.execute(ctx)
 	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
