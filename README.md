@@ -232,7 +232,7 @@ h.RegisterCheck(
 	Lottery{myname: "custom.lottery.check", probability:0.3},
 	gosundheit.InitialDelay(1*time.Second),
 	gosundheit.ExecutionPeriod(30*time.Second),
-	gosundheit.ExecutionTimeout(5*time.Second)
+	gosundheit.ExecutionTimeout(5*time.Second),
 )
 ```
 
