@@ -223,7 +223,7 @@ func (l Lottery) Name() string {
 }
 ```
 
-And register our custom check, scheduling it to run after 1 sec, every 30 sec, with a 5 seconds timeout:
+And register our custom check, scheduling it to run every 30 seconds (after a 1 second initial delay) with a 5 seconds timeout:
 ```go
 h := gosundheit.New()
 ...
