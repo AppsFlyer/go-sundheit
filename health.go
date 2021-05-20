@@ -162,7 +162,7 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
-	ctx, cancel := getContext(h.ctx, task.timeout)
+	ctx, cancel := contextWithTimeout(h.ctx, task.timeout)
 	defer cancel()
 	h.checksListener.OnCheckStarted(task.check.Name())
 	details, duration, err := task.execute(ctx)
@@ -257,8 +257,8 @@ func (h *health) registerShutdownHook(cancel context.CancelFunc) {
 	}()
 }
 
-func getContext(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
-	if t == 0 {
+func contextWithTimeout(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
+	if t <= 0 {
 		return context.WithCancel(parent)
 	}
 	return context.WithTimeout(parent, t)
