@@ -20,8 +20,6 @@ func (t *checkTask) stop() {
 
 func (t *checkTask) execute(ctx context.Context) (details interface{}, duration time.Duration, err error) {
 	startTime := time.Now()
-	//ctx, cancel := getContext(t.parentCtx, t.timeout)
-	//defer cancel()
 	details, err = t.check.Execute(ctx)
 	duration = time.Since(startTime)
 
