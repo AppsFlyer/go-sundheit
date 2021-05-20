@@ -192,8 +192,8 @@ h.RegisterCheck(
 		CheckFunc: lotteryCheck,
 	},
 	gosundheit.InitialDelay(0),
-	gosundheit.ExecutionPeriod(2 * time.Minute),
-    gosundheit.ExecutionTimeout(5 * time.Second)
+	gosundheit.ExecutionPeriod(2 * time.Minute), 
+	gosundheit.ExecutionTimeout(5 * time.Second)
 )
 ```
 
