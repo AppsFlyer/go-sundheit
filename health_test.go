@@ -54,7 +54,8 @@ func TestHealthWithBogusCheck(t *testing.T) {
 func TestRegisterDeregister(t *testing.T) {
 	leaktest.Check(t)
 
-	h := New()
+	checkWaiter := newCheckWaiter()
+	h := New(WithCheckListeners(checkWaiter))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -79,7 +80,7 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Contains(t, initiallyPassingCheck.String(), "didn't run yet", "initial details")
 
 	// await first execution
-	time.Sleep(50 * time.Millisecond)
+	assert.NoError(t, checkWaiter.awaitChecksCompletion(failingCheckName, passingCheckName, initiallyPassingCheckName))
 
 	assert.False(t, h.IsHealthy(), "health after registration before first run with one failing check")
 	results, healthy = h.Results()
@@ -103,8 +104,8 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Contains(t, initiallyPassingCheck.String(), "success", "details after execution")
 
 	h.Deregister(failingCheckName)
-	// await check cleanup
-	time.Sleep(50 * time.Millisecond)
+	// await next check completion
+	assert.NoError(t, checkWaiter.awaitChecksCompletion(passingCheckName, initiallyPassingCheckName))
 
 	assert.True(t, h.IsHealthy(), "health after failing checks deregistration")
 
@@ -121,7 +122,8 @@ func TestRegisterDeregister(t *testing.T) {
 	h.DeregisterAll()
 
 	// await stop
-	time.Sleep(50 * time.Millisecond)
+	// TODO we need to add CheckListener.OnCheckDeregistered, then we can remove this sleep too
+	time.Sleep(20 * time.Millisecond)
 	results, _ = h.Results()
 	assert.Empty(t, results, "results after stop")
 }
@@ -150,7 +152,7 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 }
 
 func TestCheckListener(t *testing.T) {
-
+	checkWaiter := newCheckWaiter()
 	listenerMock := &checkListenerMock{}
 	listenerMock.On("OnCheckRegistered", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckRegistered", passingCheckName, mock.AnythingOfType("Result")).Return()
@@ -158,14 +160,14 @@ func TestCheckListener(t *testing.T) {
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
 	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h := New(WithCheckListeners(listenerMock))
+	h := New(WithCheckListeners(listenerMock, checkWaiter))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
 
 	// await first execution
-	time.Sleep(30 * time.Millisecond)
+	assert.NoError(t, checkWaiter.awaitChecksCompletion(failingCheckName, passingCheckName))
 
 	listenerMock.AssertExpectations(t)
 
@@ -186,22 +188,16 @@ func TestCheckListener(t *testing.T) {
 }
 
 func TestHealthListeners(t *testing.T) {
-
-	listenerMock := &healthListenerMock{}
-	listenerMock.On(
-		"OnResultsUpdated",
-		mock.AnythingOfType("map[string]gosundheit.Result")).
-		Return().Times(2)
+	listenerMock := newHealthListenerMock()
 	h := New(WithHealthListeners(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
-	registerCheck(h, passingCheckName, true, false)
 	defer h.DeregisterAll()
 
-	// await first execution
-	time.Sleep(30 * time.Millisecond)
-
-	listenerMock.AssertExpectations(t)
+	res := <-listenerMock.completedChan
+	assert.Equal(t, "failed; i=1", res[failingCheckName].Details)
+	res = <-listenerMock.completedChan
+	assert.Equal(t, "failed; i=2", res[failingCheckName].Details)
 }
 
 func (l *checkListenerMock) getCompletedChecks() []completedCheck {
@@ -239,9 +235,68 @@ func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
 }
 
 type healthListenerMock struct {
-	mock.Mock
+	completedChan chan map[string]Result
 }
 
-func (h *healthListenerMock) OnResultsUpdated(results map[string]Result) {
-	h.Called(results)
+func newHealthListenerMock() *healthListenerMock {
+	return &healthListenerMock{
+		completedChan: make(chan map[string]Result),
+	}
+}
+
+func (l *healthListenerMock) OnResultsUpdated(results map[string]Result) {
+	l.completedChan <- results
+}
+
+type checkWaiter struct {
+	completedChan chan string
+}
+
+func newCheckWaiter() *checkWaiter {
+	return &checkWaiter{
+		completedChan: make(chan string),
+	}
+}
+
+func (c *checkWaiter) OnCheckRegistered(_ string, _ Result) {}
+
+func (c *checkWaiter) OnCheckStarted(_ string) {}
+
+func (c *checkWaiter) OnCheckCompleted(name string, _ Result) {
+	c.completedChan <- name
+}
+
+func (c *checkWaiter) awaitChecksCompletion(checkNames ...string) error {
+	if len(checkNames) == 0 {
+		return nil
+	}
+
+	awaitingCompletion := make(map[string]int, len(checkNames))
+	for _, c := range checkNames {
+		_, ok := awaitingCompletion[c]
+		if ok {
+			awaitingCompletion[c]++
+		} else {
+			awaitingCompletion[c] = 1
+		}
+	}
+
+	for chkName := range c.completedChan {
+		fmt.Printf("check '%s' completed\n", chkName)
+		remainingCount, ok := awaitingCompletion[chkName]
+		if !ok {
+			return errors.New(fmt.Sprintf("unexpected check completed: %s", chkName))
+		}
+		if remainingCount == 1 {
+			delete(awaitingCompletion, chkName)
+		} else {
+			awaitingCompletion[chkName]--
+		}
+
+		if len(awaitingCompletion) == 0 {
+			break
+		}
+	}
+
+	return nil
 }
