@@ -105,7 +105,7 @@ Creating a host lookup check is easy:
 ```go
 // Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
 h.RegisterCheck(
-	checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
+	checks.NewHostResolveCheck("example.com", 1),
 	gosundheit.ExecutionPeriod(10 * time.Second),
 )
 ```
@@ -122,7 +122,7 @@ func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err e
 //...
 
 h.RegisterCheck(
-	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
+	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 3),
 	gosundheit.ExecutionPeriod(10 * time.Second),
 	gosundheit.ExecutionTimeout(1*time.Second)
 )
