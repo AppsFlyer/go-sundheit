@@ -157,10 +157,8 @@ func (h *health) runCheckOrStop(task *checkTask, timerChan <-chan time.Time) boo
 }
 
 func (h *health) checkAndUpdateResult(task *checkTask, checkTime time.Time) {
-	ctx, cancel := contextWithTimeout(h.ctx, task.timeout)
-	defer cancel()
 	h.checksListener.OnCheckStarted(task.check.Name())
-	details, duration, err := task.execute(ctx)
+	details, duration, err := task.execute(h.ctx)
 	result := h.updateResult(task.check.Name(), details, duration, err, checkTime)
 	h.checksListener.OnCheckCompleted(task.check.Name(), result)
 }
@@ -238,11 +236,4 @@ func (h *health) updateResult(
 
 	h.results[name] = result
 	return result
-}
-
-func contextWithTimeout(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
-	if t <= 0 {
-		return context.WithCancel(parent)
-	}
-	return context.WithTimeout(parent, t)
 }
