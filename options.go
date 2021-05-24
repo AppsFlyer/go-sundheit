@@ -1,7 +1,6 @@
 package gosundheit
 
 import (
-	"context"
 	"time"
 )
 
@@ -39,13 +38,6 @@ func WithHealthListeners(listener ...HealthListener) HealthOption {
 // This is a simple placeholder for any future defaults
 func WithDefaults() HealthOption {
 	return healthOptionFunc(func(h *health) {})
-}
-
-// WithContext sets the main context.Context of the Health object. By default, context.Background is used.
-func WithContext(ctx context.Context) HealthOption {
-	return healthOptionFunc(func(h *health) {
-		h.ctx = ctx
-	})
 }
 
 // CheckOption configures a health check using the functional options paradigm

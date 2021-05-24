@@ -133,7 +133,7 @@ The ping checks allow you to verifies that a resource is still alive and reachab
 For example, you can use it as a DB ping check (`sql.DB` implements the Pinger interface):
 ```go
 	db, err := sql.Open(...)
-	dbCheck, err := checks.NewPingCheck("db.check", db, time.Millisecond*100)
+	dbCheck, err := checks.NewPingCheck("db.check", db)
 	_ = h.RegisterCheck(&gosundheit.Config{
 		Check: dbCheck,
 		// ...
@@ -143,7 +143,7 @@ For example, you can use it as a DB ping check (`sql.DB` implements the Pinger i
 You can also use the ping check to test a generic connection like so:
 ```go
 	pinger := checks.NewDialPinger("tcp", "example.com")
-	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger, time.Second)
+	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger)
 	h.RegisterCheck(pingCheck)
 ``` 
 
@@ -241,6 +241,7 @@ h.RegisterCheck(
 but will not be concurrently executed.
 1. Checks must complete within a reasonable time. If a check doesn't complete or gets hung, 
 the next check execution will be delayed. Use proper time outs.
+1. Checks must respect the provided context. Specifically, a check must abort its execution, and return an error, if the context has been cancelled.  
 1. **A health-check name must be a metric name compatible string** 
   (i.e. no funky characters, and spaces allowed - just make it simple like `clicks-db-check`).
   See here: https://help.datadoghq.com/hc/en-us/articles/203764705-What-are-valid-metric-names-

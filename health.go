@@ -3,10 +3,7 @@ package gosundheit
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,9 +41,7 @@ func New(opts ...HealthOption) Health {
 	}
 
 	if h.ctx == nil {
-		ctx, cancel := context.WithCancel(context.Background())
-		h.ctx = ctx
-		h.registerShutdownHook(cancel)
+		h.ctx = context.TODO()
 	}
 
 	return h
@@ -243,18 +238,6 @@ func (h *health) updateResult(
 
 	h.results[name] = result
 	return result
-}
-
-func (h *health) registerShutdownHook(cancel context.CancelFunc) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		for range sigChan {
-			cancel()
-			return
-		}
-	}()
 }
 
 func contextWithTimeout(parent context.Context, t time.Duration) (context.Context, context.CancelFunc) {
