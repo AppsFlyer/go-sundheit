@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -18,17 +19,17 @@ func TestName(t *testing.T) {
 
 func TestExecute(t *testing.T) {
 	chk := CustomCheck{}
-	details, err := chk.Execute()
+	details, err := chk.Execute(context.Background())
 	assert.Nil(t, err, "nil check func should execute and return nil error")
 	assert.Equal(t, "Unimplemented check", details, "nil check func should execute and return details")
 
 	const expectedDetails = "my.details"
 	expectedErr := errors.New("my.error")
-	chk.CheckFunc = func() (details interface{}, err error) {
+	chk.CheckFunc = func(ctx context.Context) (details interface{}, err error) {
 		return expectedDetails, expectedErr
 	}
 
-	details, err = chk.Execute()
+	details, err = chk.Execute(context.Background())
 	assert.Equal(t, expectedDetails, details)
 	assert.Equal(t, expectedErr, err)
 }
