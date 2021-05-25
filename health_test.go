@@ -14,6 +14,7 @@ import (
 
 	. "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
+	"github.com/AppsFlyer/go-sundheit/test/helper"
 )
 
 const (
@@ -55,7 +56,7 @@ func TestHealthWithBogusCheck(t *testing.T) {
 func TestRegisterDeregister(t *testing.T) {
 	leaktest.Check(t)
 
-	checkWaiter := newCheckWaiter()
+	checkWaiter := helper.NewCheckWaiter()
 	h := New(WithCheckListeners(checkWaiter))
 
 	registerCheck(h, failingCheckName, false, false)
@@ -81,7 +82,7 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Contains(t, initiallyPassingCheck.String(), "didn't run yet", "initial details")
 
 	// await first execution
-	assert.NoError(t, checkWaiter.awaitChecksCompletion(failingCheckName, passingCheckName, initiallyPassingCheckName))
+	assert.NoError(t, checkWaiter.AwaitChecksCompletion(failingCheckName, passingCheckName, initiallyPassingCheckName))
 
 	assert.False(t, h.IsHealthy(), "health after registration before first run with one failing check")
 	results, healthy = h.Results()
@@ -106,7 +107,7 @@ func TestRegisterDeregister(t *testing.T) {
 
 	h.Deregister(failingCheckName)
 	// await next check completion
-	assert.NoError(t, checkWaiter.awaitChecksCompletion(passingCheckName, initiallyPassingCheckName))
+	assert.NoError(t, checkWaiter.AwaitChecksCompletion(passingCheckName, initiallyPassingCheckName))
 
 	assert.True(t, h.IsHealthy(), "health after failing checks deregistration")
 
@@ -153,7 +154,7 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 }
 
 func TestCheckListener(t *testing.T) {
-	checkWaiter := newCheckWaiter()
+	checkWaiter := helper.NewCheckWaiter()
 	listenerMock := &checkListenerMock{}
 	listenerMock.On("OnCheckRegistered", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckRegistered", passingCheckName, mock.AnythingOfType("Result")).Return()
@@ -168,7 +169,7 @@ func TestCheckListener(t *testing.T) {
 	defer h.DeregisterAll()
 
 	// await first execution
-	assert.NoError(t, checkWaiter.awaitChecksCompletion(failingCheckName, passingCheckName))
+	assert.NoError(t, checkWaiter.AwaitChecksCompletion(failingCheckName, passingCheckName))
 
 	listenerMock.AssertExpectations(t)
 
@@ -247,57 +248,4 @@ func newHealthListenerMock() *healthListenerMock {
 
 func (l *healthListenerMock) OnResultsUpdated(results map[string]Result) {
 	l.completedChan <- results
-}
-
-type checkWaiter struct {
-	completedChan chan string
-}
-
-func newCheckWaiter() *checkWaiter {
-	return &checkWaiter{
-		completedChan: make(chan string),
-	}
-}
-
-func (c *checkWaiter) OnCheckRegistered(_ string, _ Result) {}
-
-func (c *checkWaiter) OnCheckStarted(_ string) {}
-
-func (c *checkWaiter) OnCheckCompleted(name string, _ Result) {
-	c.completedChan <- name
-}
-
-func (c *checkWaiter) awaitChecksCompletion(checkNames ...string) error {
-	if len(checkNames) == 0 {
-		return nil
-	}
-
-	awaitingCompletion := make(map[string]int, len(checkNames))
-	for _, c := range checkNames {
-		_, ok := awaitingCompletion[c]
-		if ok {
-			awaitingCompletion[c]++
-		} else {
-			awaitingCompletion[c] = 1
-		}
-	}
-
-	for chkName := range c.completedChan {
-		fmt.Printf("check '%s' completed\n", chkName)
-		remainingCount, ok := awaitingCompletion[chkName]
-		if !ok {
-			return errors.New(fmt.Sprintf("unexpected check completed: %s", chkName))
-		}
-		if remainingCount == 1 {
-			delete(awaitingCompletion, chkName)
-		} else {
-			awaitingCompletion[chkName]--
-		}
-
-		if len(awaitingCompletion) == 0 {
-			break
-		}
-	}
-
-	return nil
 }

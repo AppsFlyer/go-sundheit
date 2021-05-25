@@ -13,7 +13,13 @@ import (
 
 	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
+	"github.com/AppsFlyer/go-sundheit/test/helper"
+
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	chkName = "check1"
 )
 
 func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
@@ -35,10 +41,11 @@ func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 }
 
 func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
-	h := gosundheit.New()
+	checkWaiter := helper.NewCheckWaiter()
+	h := gosundheit.New(gosundheit.WithCheckListeners(checkWaiter))
 
 	err := h.RegisterCheck(
-		createCheck("check1", true),
+		createCheck(chkName, true),
 		createCheckOptions(10*time.Millisecond)...,
 	)
 	if err != nil {
@@ -62,7 +69,8 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 	}
 	assert.Equal(t, &expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(20 * time.Millisecond)
+	assert.NoError(t, checkWaiter.AwaitChecksCompletion(chkName))
+
 	resp = execReq(h, true)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
@@ -77,10 +85,11 @@ func TestHandleHealthJSON_longFormatPassingCheck(t *testing.T) {
 }
 
 func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
-	h := gosundheit.New()
+	checkWaiter := helper.NewCheckWaiter()
+	h := gosundheit.New(gosundheit.WithCheckListeners(checkWaiter))
 
 	err := h.RegisterCheck(
-		createCheck("check1", true),
+		createCheck(chkName, true),
 		createCheckOptions(10*time.Millisecond)...,
 	)
 	if err != nil {
@@ -95,7 +104,7 @@ func TestHandleHealthJSON_shortFormatPassingCheck(t *testing.T) {
 	expectedResponse := map[string]string{"check1": "FAIL"}
 	assert.Equal(t, expectedResponse, respMsg, "body when no checks are registered")
 
-	time.Sleep(20 * time.Millisecond)
+	assert.NoError(t, checkWaiter.AwaitChecksCompletion(chkName))
 	resp = execReq(h, false)
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status before first run")
 
