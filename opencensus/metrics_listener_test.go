@@ -1,6 +1,7 @@
 package opencensus
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -136,15 +137,15 @@ func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPass
 		passing: passing,
 	}
 
-	_ = h.RegisterCheck(&gosundheit.Config{
-		Check: &checks.CustomCheck{
+	_ = h.RegisterCheck(
+		&checks.CustomCheck{
 			CheckName: name,
 			CheckFunc: stub.run,
 		},
-		InitialDelay:     20 * time.Millisecond,
-		ExecutionPeriod:  120 * time.Millisecond,
-		InitiallyPassing: initiallyPassing,
-	})
+		gosundheit.InitialDelay(20*time.Millisecond),
+		gosundheit.ExecutionPeriod(120*time.Millisecond),
+		gosundheit.InitiallyPassing(initiallyPassing),
+	)
 }
 
 type checkStub struct {
@@ -152,7 +153,7 @@ type checkStub struct {
 	passing bool
 }
 
-func (c *checkStub) run() (details interface{}, err error) {
+func (c *checkStub) run(_ context.Context) (details interface{}, err error) {
 	c.counts++
 	if c.passing {
 		return fmt.Sprintf("%s; i=%d", successMsg, c.counts), nil
