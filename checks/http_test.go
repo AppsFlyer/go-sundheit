@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -47,6 +48,16 @@ func (req *receivedRequest) clear() {
 	req.Lock()
 	defer req.Unlock()
 	req.details = make(map[string]string, 2)
+}
+
+func TestHTTPCheckName(t *testing.T) {
+	name := "http-check"
+	check, err := NewHTTPCheck(HTTPCheckConfig{
+		CheckName: name,
+		URL:       "http://example.org",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, name, check.Name())
 }
 
 func TestNewHttpCheckRequiredFields(t *testing.T) {
@@ -125,7 +136,7 @@ func testHTTPCheckSuccess(url string, client *http.Client) func(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Nil(t, err, "check should pass")
 		assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
 	}
@@ -141,7 +152,7 @@ func testHTTPCheckSuccessWithExpectedBody(url string, client *http.Client) func(
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Nil(t, err, "check should pass")
 		assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
 	}
@@ -162,7 +173,7 @@ func testHTTPCheckSuccessWithPostBodyPayload(url string, client *http.Client) fu
 		assert.Nil(t, err)
 
 		for i := 0; i < 5; i++ {
-			details, err := check.Execute()
+			details, err := check.Execute(context.Background())
 			assert.Nil(t, err, "check should pass")
 			assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
 		}
@@ -179,7 +190,7 @@ func testHTTPCheckFailWithUnexpectedBody(url string, client *http.Client) func(t
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Error(t, err, "check should fail")
 		assert.Equal(t, "body does not contain expected content 'my body is a temple'", err.Error(), "check error message")
 		assert.Equal(t, url, details, "check details when fail are the URL")
@@ -196,7 +207,7 @@ func testHTTPCheckFailStatusCode(url string, client *http.Client) func(t *testin
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Error(t, err, "check should fail")
 		assert.Equal(t, "unexpected status code: '200' expected: '300'", err.Error(), "check error message")
 		assert.Equal(t, url, details, "check details when fail are the URL")
@@ -221,7 +232,7 @@ func testHTTPCheckSuccessWithOptions(url string, client *http.Client, rr *receiv
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Nil(t, err, "check should pass")
 		assert.Equal(t, fmt.Sprintf("URL [%s] is accessible", url), details, "check should pass")
 		assert.Equal(t, expectedCookieVal, rr.getDetail(testCookieKey))
@@ -239,7 +250,7 @@ func testHTTPCheckFailURL(_ string, client *http.Client) func(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Error(t, err, "check should fail")
 		assert.Contains(t, err.Error(), "lookup", "check error message")
 		assert.Equal(t, bogusURL, details, "check details when fail are the URL")
@@ -257,7 +268,7 @@ func testHTTPCheckFailTimeout(url string, client *http.Client) func(t *testing.T
 		})
 		assert.Nil(t, err)
 
-		details, err := check.Execute()
+		details, err := check.Execute(context.Background())
 		assert.Error(t, err, "check should fail")
 		assert.Contains(t, err.Error(), "Client.Timeout exceeded", "check error message")
 		assert.Equal(t, waitURL, details, "check details when fail are the URL")

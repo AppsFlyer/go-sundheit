@@ -1,6 +1,8 @@
 package gosundheit
 
-import "time"
+import (
+	"time"
+)
 
 // HealthOption configures a health checker using the functional options paradigm
 // popularized by Rob Pike and Dave Cheney.
@@ -102,4 +104,17 @@ func (o initiallyPassing) applyCheck(c *checkConfig) {
 // InitiallyPassing indicates when true, the check will be treated as passing before the first run; defaults to false
 func InitiallyPassing(b bool) Option {
 	return initiallyPassing(b)
+}
+
+type executionTimeout time.Duration
+
+func (o executionTimeout) applyCheck(c *checkConfig) {
+	c.executionTimeout = time.Duration(o)
+}
+
+// ExecutionTimeout sets the timeout of the check.
+// It is up to the check to respect the timeout, which is provided via the Context argument of `Check.Execute` method.
+// Defaults to no timeout
+func ExecutionTimeout(d time.Duration) CheckOption {
+	return executionTimeout(d)
 }

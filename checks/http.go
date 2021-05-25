@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -90,9 +91,9 @@ func (check *httpCheck) Name() string {
 	return check.config.CheckName
 }
 
-func (check *httpCheck) Execute() (details interface{}, err error) {
+func (check *httpCheck) Execute(ctx context.Context) (details interface{}, err error) {
 	details = check.config.URL
-	resp, err := check.fetchURL()
+	resp, err := check.fetchURL(ctx)
 	if err != nil {
 		return details, err
 	}
@@ -120,8 +121,8 @@ func (check *httpCheck) Execute() (details interface{}, err error) {
 
 // fetchURL executes the HTTP request to the target URL, and returns a `http.Response`, error.
 // It is the callers responsibility to close the response body
-func (check *httpCheck) fetchURL() (*http.Response, error) {
-	req, err := http.NewRequest(check.config.Method, check.config.URL, check.config.Body())
+func (check *httpCheck) fetchURL(ctx context.Context) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, check.config.Method, check.config.URL, check.config.Body())
 	if err != nil {
 		return nil, errors.Errorf("unable to create check HTTP request: %v", err)
 	}

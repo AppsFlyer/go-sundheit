@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -118,7 +119,7 @@ func unmarshalLongFormat(r io.Reader) *response {
 func createCheck(name string, passing bool) gosundheit.Check {
 	return &checks.CustomCheck{
 		CheckName: name,
-		CheckFunc: func() (details interface{}, err error) {
+		CheckFunc: func(ctx context.Context) (details interface{}, err error) {
 			if passing {
 				return "pass", nil
 			}

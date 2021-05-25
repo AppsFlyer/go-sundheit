@@ -105,7 +105,7 @@ Creating a host lookup check is easy:
 ```go
 // Schedule a host resolution check for `example.com`, requiring at least one results, and running every 10 sec
 h.RegisterCheck(
-	checks.NewHostResolveCheck("example.com", 200*time.Millisecond, 1),
+	checks.NewHostResolveCheck("example.com", 1),
 	gosundheit.ExecutionPeriod(10 * time.Second),
 )
 ```
@@ -122,8 +122,9 @@ func ReverseDNLookup(ctx context.Context, addr string) (resolvedCount int, err e
 //...
 
 h.RegisterCheck(
-	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 200*time.Millisecond, 3),
+	checks.NewResolveCheck(ReverseDNLookup, "127.0.0.1", 3),
 	gosundheit.ExecutionPeriod(10 * time.Second),
+	gosundheit.ExecutionTimeout(1*time.Second)
 )
 ```
 
@@ -132,7 +133,7 @@ The ping checks allow you to verifies that a resource is still alive and reachab
 For example, you can use it as a DB ping check (`sql.DB` implements the Pinger interface):
 ```go
 	db, err := sql.Open(...)
-	dbCheck, err := checks.NewPingCheck("db.check", db, time.Millisecond*100)
+	dbCheck, err := checks.NewPingCheck("db.check", db)
 	_ = h.RegisterCheck(&gosundheit.Config{
 		Check: dbCheck,
 		// ...
@@ -142,7 +143,7 @@ For example, you can use it as a DB ping check (`sql.DB` implements the Pinger i
 You can also use the ping check to test a generic connection like so:
 ```go
 	pinger := checks.NewDialPinger("tcp", "example.com")
-	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger, time.Second)
+	pingCheck, err := checks.NewPingCheck("example.com.reachable", pinger)
 	h.RegisterCheck(pingCheck)
 ``` 
 
@@ -180,7 +181,7 @@ func lotteryCheck() (details interface{}, err error) {
 }
 ```
 
-Now we register the check to start running right away, and execute once per 2 minutes:
+Now we register the check to start running right away, and execute once per 2 minutes with a timeout of 5 seconds:
 ```go
 h := gosundheit.New()
 ...
@@ -191,7 +192,8 @@ h.RegisterCheck(
 		CheckFunc: lotteryCheck,
 	},
 	gosundheit.InitialDelay(0),
-	gosundheit.ExecutionPeriod(2 * time.Minute),
+	gosundheit.ExecutionPeriod(2 * time.Minute), 
+	gosundheit.ExecutionTimeout(5 * time.Second)
 )
 ```
 
@@ -221,7 +223,7 @@ func (l Lottery) Name() string {
 }
 ```
 
-And register our custom check, scheduling it to run after 1 sec, and every 30 sec:
+And register our custom check, scheduling it to run every 30 seconds (after a 1 second initial delay) with a 5 seconds timeout:
 ```go
 h := gosundheit.New()
 ...
@@ -230,6 +232,7 @@ h.RegisterCheck(
 	Lottery{myname: "custom.lottery.check", probability:0.3},
 	gosundheit.InitialDelay(1*time.Second),
 	gosundheit.ExecutionPeriod(30*time.Second),
+	gosundheit.ExecutionTimeout(5*time.Second),
 )
 ```
 
@@ -238,6 +241,7 @@ h.RegisterCheck(
 but will not be concurrently executed.
 1. Checks must complete within a reasonable time. If a check doesn't complete or gets hung, 
 the next check execution will be delayed. Use proper time outs.
+1. Checks must respect the provided context. Specifically, a check must abort its execution, and return an error, if the context has been cancelled.  
 1. **A health-check name must be a metric name compatible string** 
   (i.e. no funky characters, and spaces allowed - just make it simple like `clicks-db-check`).
   See here: https://help.datadoghq.com/hc/en-us/articles/203764705-What-are-valid-metric-names-
