@@ -33,15 +33,12 @@ type Health interface {
 // New returns a new Health instance.
 func New(opts ...HealthOption) Health {
 	h := &health{
+		ctx:        context.TODO(),
 		results:    make(map[string]Result, maxExpectedChecks),
 		checkTasks: make(map[string]checkTask, maxExpectedChecks),
 	}
 	for _, opt := range append(opts, WithDefaults()) {
 		opt.apply(h)
-	}
-
-	if h.ctx == nil {
-		h.ctx = context.TODO()
 	}
 
 	return h
