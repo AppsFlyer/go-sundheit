@@ -2,11 +2,13 @@ package checks
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -51,7 +53,7 @@ func mockPinger(failing bool) PingContextFunc {
 	}
 }
 
-func TestNewDialPinger(t *testing.T) {
+func TestNewDialPinger_bogusAddress(t *testing.T) {
 	assertions := assert.New(t)
 
 	pinger := NewDialPinger("tcp", "there.should.be.no.such.host.com:666")
@@ -59,7 +61,18 @@ func TestNewDialPinger(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	defer cancel()
 	assertions.Error(pinger.PingContext(ctx), "expecting a ping error for non existing address")
+}
 
-	pinger = NewDialPinger("tcp", "example.com:80")
+func TestNewDialPinger_existingAddress(t *testing.T) {
+	assertions := assert.New(t)
+
+	ln, err := net.Listen("tcp", ":0")
+	require.NoError(t, err, "failed to start a test listener")
+	defer func() { _ = ln.Close() }()
+
+	pinger := NewDialPinger("tcp", ln.Addr().String())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
 	assertions.NoError(pinger.PingContext(ctx), "expecting success for an existing address")
 }
