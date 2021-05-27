@@ -66,7 +66,7 @@ func TestNewDialPinger_bogusAddress(t *testing.T) {
 func TestNewDialPinger_existingAddress(t *testing.T) {
 	assertions := assert.New(t)
 
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err, "failed to start a test listener")
 	defer func() { _ = ln.Close() }()
 
