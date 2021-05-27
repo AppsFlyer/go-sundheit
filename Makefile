@@ -14,6 +14,6 @@ lint: $(GOLANGCI_LINT)
 	##### linting #####
 	golangci-lint run -E golint -E gosec -E gofmt
 
-test:
+test: build
 	##### testing #####
 	go test $(testflags) -v -race ./...
