@@ -380,26 +380,26 @@ import (
 	"go.opencensus.io/stats/view"
 )
 // This listener can act both as check and health listener for reporting metrics
-oc := opencencus.NewMetricsListener()
+oc := opencensus.NewMetricsListener()
 h := gosundheit.New(gosundheit.WithCheckListener(oc), gosundheit.WithHealthListener(oc))
 // ...
-view.Register(opencencus.DefaultHealthViews...)
+view.Register(opencensus.DefaultHealthViews...)
 // or register individual views. For example:
-view.Register(opencencus.ViewCheckExecutionTime, opencencus.ViewCheckStatusByName, ...)
+view.Register(opencensus.ViewCheckExecutionTime, opencensus.ViewCheckStatusByName, ...)
 ```
 
 ### Classification
 
 It is sometimes required to report metrics for different check types (e.g. setup, liveness, readiness).
-To report metrics using `classification` tag - it's possible to initialize the OpenCencus listener with classification:
+To report metrics using `classification` tag - it's possible to initialize the OpenCensus listener with classification:
 
 ```go
 // startup
-opencencus.NewMetricsListener(opencencus.WithStartupClassification())
+opencensus.NewMetricsListener(opencensus.WithStartupClassification())
 // liveness
-opencencus.NewMetricsListener(opencencus.WithLivenessClassification())
+opencensus.NewMetricsListener(opencensus.WithLivenessClassification())
 // readiness
-opencencus.NewMetricsListener(opencencus.WithReadinessClassification())
+opencensus.NewMetricsListener(opencensus.WithReadinessClassification())
 // custom
-opencencus.NewMetricsListener(opencencus.WithClassification("custom"))
+opencensus.NewMetricsListener(opencensus.WithClassification("custom"))
 ```
