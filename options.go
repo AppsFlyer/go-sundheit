@@ -37,7 +37,11 @@ func WithHealthListeners(listener ...HealthListener) HealthOption {
 // WithDefaults sets all the Health object settings. It's not required to use this as no options is always default
 // This is a simple placeholder for any future defaults
 func WithDefaults() HealthOption {
-	return healthOptionFunc(func(h *health) {})
+	return healthOptionFunc(func(h *health) {
+		if h.defaultExecutionPeriod == 0 {
+			h.defaultExecutionPeriod = 1 * time.Minute
+		}
+	})
 }
 
 // CheckOption configures a health check using the functional options paradigm
