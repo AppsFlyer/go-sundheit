@@ -38,7 +38,7 @@ func WithHealthListeners(listener ...HealthListener) HealthOption {
 // This is a simple placeholder for any future defaults
 func WithDefaults() HealthOption {
 	return healthOptionFunc(func(h *health) {
-		if h.defaultExecutionPeriod == 0 {
+		if h.defaultExecutionPeriod <= 0 {
 			h.defaultExecutionPeriod = 1 * time.Minute
 		}
 	})
