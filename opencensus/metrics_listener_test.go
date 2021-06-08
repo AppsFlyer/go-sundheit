@@ -136,15 +136,15 @@ func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPass
 		passing: passing,
 	}
 
-	_ = h.RegisterCheck(&gosundheit.Config{
-		Check: &checks.CustomCheck{
+	_ = h.RegisterCheck(
+		&checks.CustomCheck{
 			CheckName: name,
 			CheckFunc: stub.run,
 		},
-		InitialDelay:     20 * time.Millisecond,
-		ExecutionPeriod:  120 * time.Millisecond,
-		InitiallyPassing: initiallyPassing,
-	})
+		gosundheit.InitialDelay(20*time.Millisecond),
+		gosundheit.ExecutionPeriod(120*time.Millisecond),
+		gosundheit.InitiallyPassing(initiallyPassing),
+	)
 }
 
 type checkStub struct {
