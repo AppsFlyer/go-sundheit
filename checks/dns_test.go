@@ -25,7 +25,7 @@ func TestNewHostResolveCheck_noSuchHost(t *testing.T) {
 
 	assert.Equal(t, "resolve.I-hope-there-is.no.such.host.com", check.Name(), "check name")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	details, err := check.Execute(ctx)
 
