@@ -381,7 +381,7 @@ import (
 )
 // This listener can act both as check and health listener for reporting metrics
 oc := opencensus.NewMetricsListener()
-h := gosundheit.New(gosundheit.WithCheckListener(oc), gosundheit.WithHealthListener(oc))
+h := gosundheit.New(gosundheit.WithCheckListeners(oc), gosundheit.WithHealthListeners(oc))
 // ...
 view.Register(opencensus.DefaultHealthViews...)
 // or register individual views. For example:
