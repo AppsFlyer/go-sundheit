@@ -59,11 +59,18 @@ type health struct {
 }
 
 func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
-	if check == nil || check.Name() == "" {
-		return errors.Errorf("misconfigured check %v", check)
+	if check == nil {
+		return errors.New("check must not be nil")
+	}
+	if check.Name() == "" {
+		return errors.New("check name must not be empty")
 	}
 
 	cfg := h.initCheckConfig(opts)
+
+	if cfg.executionPeriod <= 0 {
+		return errors.New("execution period must be greater than 0")
+	}
 
 	// checks are initially failing by default, but we allow overrides...
 	var initialErr error

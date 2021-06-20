@@ -52,6 +52,21 @@ func TestHealthWithBogusCheck(t *testing.T) {
 	assert.Empty(t, results, "results after bogus register")
 }
 
+func TestRegisterCheckValidations(t *testing.T) {
+	h := New()
+
+	// should return an error for nil check
+	assert.EqualError(t, h.RegisterCheck(nil), "check must not be nil")
+	// should return an error for missing check name
+	assert.EqualError(t, h.RegisterCheck(&checks.CustomCheck{}), "check name must not be empty")
+	// Should return an error for missing execution period
+	assert.EqualError(t, h.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}), "execution period must be greater than 0")
+
+	hWithExecPeriod := New(ExecutionPeriod(1 * time.Minute))
+	assert.NoError(t, hWithExecPeriod.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}))
+
+}
+
 func TestRegisterDeregister(t *testing.T) {
 	leaktest.Check(t)
 
