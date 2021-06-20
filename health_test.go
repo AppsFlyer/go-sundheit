@@ -65,6 +65,7 @@ func TestRegisterCheckValidations(t *testing.T) {
 	hWithExecPeriod := New(ExecutionPeriod(1 * time.Minute))
 	defer hWithExecPeriod.DeregisterAll()
 
+	// should inherit the execution period from the health instance
 	assert.NoError(t, hWithExecPeriod.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}))
 
 }
