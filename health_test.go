@@ -43,8 +43,7 @@ func TestHealthWithBogusCheck(t *testing.T) {
 	err := h.RegisterCheck(nil)
 	defer h.DeregisterAll()
 
-	assert.Error(t, err, "register bogus check should fail")
-	assert.Contains(t, err.Error(), "misconfigured check", "fail message")
+	assert.EqualError(t, err, "check must not be nil")
 	assert.True(t, h.IsHealthy(), "health after bogus register")
 
 	results, healthy := h.Results()
@@ -54,6 +53,7 @@ func TestHealthWithBogusCheck(t *testing.T) {
 
 func TestRegisterCheckValidations(t *testing.T) {
 	h := New()
+	defer h.DeregisterAll()
 
 	// should return an error for nil check
 	assert.EqualError(t, h.RegisterCheck(nil), "check must not be nil")
@@ -63,6 +63,8 @@ func TestRegisterCheckValidations(t *testing.T) {
 	assert.EqualError(t, h.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}), "execution period must be greater than 0")
 
 	hWithExecPeriod := New(ExecutionPeriod(1 * time.Minute))
+	defer hWithExecPeriod.DeregisterAll()
+
 	assert.NoError(t, hWithExecPeriod.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}))
 
 }
