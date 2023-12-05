@@ -21,11 +21,8 @@ jobs:
           GOPROXY: "https://proxy.golang.org"
         run: go build .
 
-      - name: Install golangci-lint
-        run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.20.0
-
-      - name: Run golangci-lint
-        run: golangci-lint run -E golint -E gosec -E gofmt
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
 
       - name: Test
         env:
@@ -64,11 +61,8 @@ jobs:
           GOPROXY: "https://proxy.golang.org"
         run: cd opencensus && go build .
 
-      - name: Install golangci-lint
-        run: curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.20.0
-
-      - name: Run golangci-lint
-        run: cd opencensus && golangci-lint run -E golint -E gosec -E gofmt
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
 
       - name: Test
         env:
