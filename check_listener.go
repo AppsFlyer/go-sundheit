@@ -18,20 +18,26 @@ type CheckListener interface {
 	OnCheckCompleted(name string, result Result)
 }
 
+// CheckListeners is a slice of check listeners
 type CheckListeners []CheckListener
 
+// OnCheckRegistered is called when the check with the specified name has registered.
+// Result argument is for reporting the first run state of the check
 func (c CheckListeners) OnCheckRegistered(name string, result Result) {
 	for _, listener := range c {
 		listener.OnCheckRegistered(name, result)
 	}
 }
 
+// OnCheckStarted is called when a check with the specified name has started
 func (c CheckListeners) OnCheckStarted(name string) {
 	for _, listener := range c {
 		listener.OnCheckStarted(name)
 	}
 }
 
+// OnCheckCompleted is called when the check with the specified name has completed it's execution.
+// The results are passed as an argument
 func (c CheckListeners) OnCheckCompleted(name string, result Result) {
 	for _, listener := range c {
 		listener.OnCheckCompleted(name, result)

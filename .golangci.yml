@@ -6,14 +6,19 @@ run:
   modules-download-mode: readonly
 
 linters:
+  disable-all: true
   enable:
     - errcheck
     - goimports
-    - golint
+    - revive
     - govet
     - staticcheck
     - gosec
     - gofmt
+
+linters-settings:
+  revive:
+    severity: warning
 
 issues:
   exclude-use-default: false
