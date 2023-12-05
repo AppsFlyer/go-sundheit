@@ -9,10 +9,10 @@ jobs:
         go: [ '1.21', '1.20', '1.19' ]
     steps:
       - name: Check out source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
@@ -52,10 +52,10 @@ jobs:
         go: [ '1.21', '1.20', '1.19' ]
     steps:
       - name: Check out source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
