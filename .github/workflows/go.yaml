@@ -2,19 +2,19 @@ name: go-build
 on: [ push, pull_request ]
 jobs:
   build:
-    name: build ( ${{ matrix.go }} ), test, lint
+    name: build ( ${{ matrix.go-version }} ), test, lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.21', '1.20', '1.19' ]
+        go: [ '1.19', '1.20', '1.21.x' ]
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ matrix.go-version }}
 
       - name: Build
         env:
@@ -33,31 +33,31 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: convert to lcov
-        if: ${{ matrix.go }} == '1.15'
+        if: ${{ matrix.go-version }} == '1.15'
         run: |
           go get -u github.com/jandelgado/gcov2lcov
           gcov2lcov -infile=coverage.out -outfile=coverage.lcov
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
-        if: ${{ matrix.go }} == '1.15'
+        if: ${{ matrix.go-version }} == '1.15'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: coverage.lcov
   build-opencencus-check-listener:
-    name: build ( ${{ matrix.go }} ), test, lint for opencensus
+    name: build ( ${{ matrix.go-version }} ), test, lint for opencensus
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.21', '1.20', '1.19' ]
+        go: [ '1.19', '1.20', '1.21.x' ]
     steps:
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
         with:
-          go-version: ${{ matrix.go }}
+          go-version: ${{ matrix.go-version }}
 
       - name: Build
         env:
