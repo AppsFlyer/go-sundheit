@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	. "github.com/AppsFlyer/go-sundheit"
+	"github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	"github.com/AppsFlyer/go-sundheit/test/helper"
 )
@@ -27,7 +27,7 @@ const (
 )
 
 func TestHealthWithEmptySetup(t *testing.T) {
-	h := New()
+	h := gosundheit.New()
 
 	assert.True(t, h.IsHealthy(), "empty health")
 
@@ -39,7 +39,7 @@ func TestHealthWithEmptySetup(t *testing.T) {
 }
 
 func TestHealthWithBogusCheck(t *testing.T) {
-	h := New()
+	h := gosundheit.New()
 
 	err := h.RegisterCheck(nil)
 	defer h.DeregisterAll()
@@ -53,7 +53,7 @@ func TestHealthWithBogusCheck(t *testing.T) {
 }
 
 func TestRegisterCheckValidations(t *testing.T) {
-	h := New()
+	h := gosundheit.New()
 	defer h.DeregisterAll()
 
 	// should return an error for nil check
@@ -63,7 +63,7 @@ func TestRegisterCheckValidations(t *testing.T) {
 	// Should return an error for missing execution period
 	assert.EqualError(t, h.RegisterCheck(&checks.CustomCheck{CheckName: "non-empty"}), "execution period must be greater than 0")
 
-	hWithExecPeriod := New(ExecutionPeriod(1 * time.Minute))
+	hWithExecPeriod := gosundheit.New(gosundheit.ExecutionPeriod(1 * time.Minute))
 	defer hWithExecPeriod.DeregisterAll()
 
 	// should inherit the execution period from the health instance
@@ -75,7 +75,7 @@ func TestRegisterDeregister(t *testing.T) {
 	leaktest.Check(t)
 
 	checkWaiter := helper.NewCheckWaiter()
-	h := New(WithCheckListeners(checkWaiter))
+	h := gosundheit.New(gosundheit.WithCheckListeners(checkWaiter))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -148,7 +148,7 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.Empty(t, results, "results after stop")
 }
 
-func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
+func registerCheck(h gosundheit.Health, name string, passing bool, initiallyPassing bool) {
 	i := 0
 	checkFunc := func(ctx context.Context) (details interface{}, err error) {
 		i++
@@ -165,9 +165,9 @@ func registerCheck(h Health, name string, passing bool, initiallyPassing bool) {
 			CheckName: name,
 			CheckFunc: checkFunc,
 		},
-		InitialDelay(20*time.Millisecond),
-		ExecutionPeriod(20*time.Millisecond),
-		InitiallyPassing(initiallyPassing),
+		gosundheit.InitialDelay(20*time.Millisecond),
+		gosundheit.ExecutionPeriod(20*time.Millisecond),
+		gosundheit.InitiallyPassing(initiallyPassing),
 	)
 }
 
@@ -180,7 +180,7 @@ func TestCheckListener(t *testing.T) {
 	listenerMock.On("OnCheckStarted", passingCheckName).Return()
 	listenerMock.On("OnCheckCompleted", failingCheckName, mock.AnythingOfType("Result")).Return()
 	listenerMock.On("OnCheckCompleted", passingCheckName, mock.AnythingOfType("Result")).Return()
-	h := New(WithCheckListeners(listenerMock, checkWaiter))
+	h := gosundheit.New(gosundheit.WithCheckListeners(listenerMock, checkWaiter))
 
 	registerCheck(h, failingCheckName, false, false)
 	registerCheck(h, passingCheckName, true, false)
@@ -209,7 +209,7 @@ func TestCheckListener(t *testing.T) {
 
 func TestHealthListeners(t *testing.T) {
 	listenerMock := newHealthListenerMock()
-	h := New(WithHealthListeners(listenerMock))
+	h := gosundheit.New(gosundheit.WithHealthListeners(listenerMock))
 
 	registerCheck(h, failingCheckName, false, false)
 	defer h.DeregisterAll()
@@ -235,10 +235,10 @@ type checkListenerMock struct {
 
 type completedCheck struct {
 	name string
-	res  Result
+	res  gosundheit.Result
 }
 
-func (l *checkListenerMock) OnCheckRegistered(name string, result Result) {
+func (l *checkListenerMock) OnCheckRegistered(name string, result gosundheit.Result) {
 	l.Called(name, result)
 }
 
@@ -246,7 +246,7 @@ func (l *checkListenerMock) OnCheckStarted(name string) {
 	l.Called(name)
 }
 
-func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
+func (l *checkListenerMock) OnCheckCompleted(name string, res gosundheit.Result) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -255,15 +255,15 @@ func (l *checkListenerMock) OnCheckCompleted(name string, res Result) {
 }
 
 type healthListenerMock struct {
-	completedChan chan map[string]Result
+	completedChan chan map[string]gosundheit.Result
 }
 
 func newHealthListenerMock() *healthListenerMock {
 	return &healthListenerMock{
-		completedChan: make(chan map[string]Result),
+		completedChan: make(chan map[string]gosundheit.Result),
 	}
 }
 
-func (l *healthListenerMock) OnResultsUpdated(results map[string]Result) {
+func (l *healthListenerMock) OnResultsUpdated(results map[string]gosundheit.Result) {
 	l.completedChan <- results
 }
