@@ -9,9 +9,12 @@ import (
 
 const (
 	maxExpectedChecks = 16
-	initialResultMsg  = "didn't run yet"
 	// ValAllChecks is the value used for the check tags when tagging all tests
 	ValAllChecks = "all_checks"
+)
+
+var (
+	ErrNotRunYet = errors.New("didn't run yet")
 )
 
 // Result represents the output of a health check execution.
