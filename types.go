@@ -1,20 +1,17 @@
 package gosundheit
 
 import (
+	"errors"
 	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const (
 	maxExpectedChecks = 16
-	// ValAllChecks is the value used for the check tags when tagging all tests
-	ValAllChecks = "all_checks"
 )
 
 var (
-	ErrNotRunYet = errors.New("didn't run yet")
+	ErrNotRunYet = newMarshalableError(errors.New("didn't run yet"))
 )
 
 // Result represents the output of a health check execution.
@@ -53,18 +50,17 @@ func newMarshalableError(err error) error {
 		return nil
 	}
 
-	mr := &marshalableError{
+	mr := marshalableError{
 		Message: err.Error(),
 	}
-
-	cause := errors.Cause(err)
-	if cause != err {
+	cause := errors.Unwrap(err)
+	if !errors.Is(cause, err) {
 		mr.Cause = newMarshalableError(cause)
 	}
 
 	return mr
 }
 
-func (e *marshalableError) Error() string {
+func (e marshalableError) Error() string {
 	return e.Message
 }

@@ -96,9 +96,9 @@ func TestRegisterDeregister(t *testing.T) {
 	assert.False(t, failingCheck.IsHealthy(), "check initially fails until first execution by default")
 	assert.True(t, initiallyPassingCheck.IsHealthy(), "check should initially pass")
 	assert.Contains(t, passingCheck.String(), "didn't run yet", "initial details")
-	assert.EqualError(t, passingCheck.Error, gosundheit.ErrNotRunYet.Error(), "initial details")
+	assert.True(t, errors.Is(passingCheck.Error, gosundheit.ErrNotRunYet))
 	assert.Contains(t, failingCheck.String(), "didn't run yet", "initial details")
-	assert.EqualError(t, failingCheck.Error, gosundheit.ErrNotRunYet.Error(), "initial details")
+	assert.True(t, errors.Is(failingCheck.Error, gosundheit.ErrNotRunYet))
 	assert.Contains(t, initiallyPassingCheck.String(), "didn't run yet", "initial details")
 
 	// await first execution
