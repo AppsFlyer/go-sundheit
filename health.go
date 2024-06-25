@@ -2,7 +2,6 @@ package gosundheit
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -75,10 +74,10 @@ func (h *health) RegisterCheck(check Check, opts ...CheckOption) error {
 	// checks are initially failing by default, but we allow overrides...
 	var initialErr error
 	if !cfg.initiallyPassing {
-		initialErr = fmt.Errorf(initialResultMsg)
+		initialErr = ErrNotRunYet
 	}
 
-	result := h.updateResult(check.Name(), initialResultMsg, 0, initialErr, time.Now())
+	result := h.updateResult(check.Name(), ErrNotRunYet.Error(), 0, initialErr, time.Now())
 	h.checksListener.OnCheckRegistered(check.Name(), result)
 	h.scheduleCheck(h.createCheckTask(check, cfg.executionTimeout), cfg.initialDelay, cfg.executionPeriod)
 	return nil
