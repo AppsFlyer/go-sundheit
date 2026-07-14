@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +24,7 @@ const (
 func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
 	h := gosundheit.New()
 	resp := execReq(h, true)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status when no checks are registered")
 	assert.Equal(t, "{}\n", string(body), "body when no checks are registered")
@@ -34,7 +33,7 @@ func TestHandleHealthJSON_longFormatNoChecks(t *testing.T) {
 func TestHandleHealthJSON_shortFormatNoChecks(t *testing.T) {
 	h := gosundheit.New()
 	resp := execReq(h, false)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "status when no checks are registered")
 	assert.Equal(t, "{}\n", string(body), "body when no checks are registered")

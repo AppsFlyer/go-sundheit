@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -105,7 +104,7 @@ func (check *httpCheck) Execute(ctx context.Context) (details interface{}, err e
 	}
 
 	if check.config.ExpectedBody != "" {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return details, errors.Errorf("failed to read response body: %v", err)
 		}

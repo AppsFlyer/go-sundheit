@@ -17,3 +17,6 @@
 .idea
 af-world
 debug
+
+# golangci-lint installed by the Makefile
+/bin/
