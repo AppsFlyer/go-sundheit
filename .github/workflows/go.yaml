@@ -3,7 +3,7 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: build ( ${{ matrix.go-version }} ), test, lint
+    name: build ( ${{ matrix.go-version }} ), test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,10 +16,10 @@ jobs:
             upload-coverage: true
     steps:
       - name: Check out source code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -27,11 +27,6 @@ jobs:
         env:
           GOPROXY: "https://proxy.golang.org"
         run: go build .
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
 
       - name: Test
         env:
@@ -52,17 +47,17 @@ jobs:
           file: coverage.lcov
 
   build-opencencus-check-listener:
-    name: build ( ${{ matrix.go-version }} ), test, lint for opencensus
+    name: build ( ${{ matrix.go-version }} ), test for opencensus
     runs-on: ubuntu-latest
     strategy:
       matrix:
         go-version: *go-versions
     steps:
       - name: Check out source code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -71,12 +66,30 @@ jobs:
           GOPROXY: "https://proxy.golang.org"
         run: cd opencensus && go build .
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-
       - name: Test
         env:
           GOPROXY: "https://proxy.golang.org"
         run: cd opencensus && go test -v -race -coverprofile=coverage.out ./...
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+
+      - name: golangci-lint (root)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.12.2
+
+      - name: golangci-lint (opencensus)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.12.2
+          working-directory: opencensus
