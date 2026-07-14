@@ -1,18 +1,27 @@
 name: go-build
 on: [ push, pull_request ]
+
+x-go-versions: &go-versions
+  - '1.26.x'
+  - '1.25.x'
+  - '1.24.x'
+
 jobs:
   build:
     name: build ( ${{ matrix.go-version }} ), test, lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.19', '1.20', '1.21.x' ]
+        go-version: *go-versions
+        include:
+          - go-version: '1.26.x'
+            upload-coverage: true
     steps:
       - name: Check out source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -22,7 +31,7 @@ jobs:
         run: go build .
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
           skip-go-installation: true
 
@@ -32,29 +41,29 @@ jobs:
         run: go test -v -race -coverprofile=coverage.out ./...
 
       - name: convert to lcov
-        if: ${{ matrix.go-version }} == '1.15'
+        if: ${{ matrix.upload-coverage == true }}
         run: |
           go install github.com/jandelgado/gcov2lcov@latest
           $(go env GOPATH)/bin/gcov2lcov -infile=coverage.out -outfile=coverage.lcov
 
       - name: Coveralls
-        uses: coverallsapp/github-action@master
-        if: ${{ matrix.go-version }} == '1.15'
+        uses: coverallsapp/github-action@v2
+        if: ${{ matrix.upload-coverage == true }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+          file: coverage.lcov
   build-opencencus-check-listener:
     name: build ( ${{ matrix.go-version }} ), test, lint for opencensus
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.19', '1.20', '1.21.x' ]
+        go-version: *go-versions
     steps:
       - name: Check out source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -64,7 +73,7 @@ jobs:
         run: cd opencensus && go build .
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
           skip-go-installation: true
 
