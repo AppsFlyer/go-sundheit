@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -103,7 +102,7 @@ func TestNewHttpCheck(t *testing.T) {
 
 		rw.WriteHeader(200)
 
-		reqBody, _ := ioutil.ReadAll(req.Body)
+		reqBody, _ := io.ReadAll(req.Body)
 		responsePayload := expectedContent
 		if len(reqBody) != 0 {
 			responsePayload = string(reqBody)
@@ -226,7 +225,7 @@ func testHTTPCheckSuccessWithOptions(url string, client *http.Client, rr *receiv
 					r.Header.Add(testHeaderKey, expectedHeaderVal)
 				},
 				func(r *http.Request) {
-					r.AddCookie(&http.Cookie{Name: testCookieKey, Value: expectedCookieVal})
+					r.AddCookie(&http.Cookie{Name: testCookieKey, Value: expectedCookieVal}) //nolint:gosec // test-only request cookie; security attributes irrelevant
 				},
 			},
 		})
