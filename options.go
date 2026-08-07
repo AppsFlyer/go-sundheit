@@ -1,6 +1,7 @@
 package gosundheit
 
 import (
+	"context"
 	"time"
 )
 
@@ -31,6 +32,13 @@ func WithCheckListeners(listener ...CheckListener) HealthOption {
 func WithHealthListeners(listener ...HealthListener) HealthOption {
 	return healthOptionFunc(func(h *health) {
 		h.healthListener = listener
+	})
+}
+
+// WithContext allows providing non-default context to be used inside health checks
+func WithContext(ctx context.Context) HealthOption {
+	return healthOptionFunc(func(h *health) {
+		h.ctx = ctx
 	})
 }
 
