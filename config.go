@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// checkConfig configures a health Check and it's scheduling timing requirements.
+// checkConfig configures a health Check and its scheduling timing requirements.
 type checkConfig struct {
 	// executionPeriod is the period between successive executions.
 	executionPeriod time.Duration

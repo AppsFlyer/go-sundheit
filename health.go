@@ -11,12 +11,12 @@ import (
 // Health is the API for registering / deregistering health checks, and for fetching the health checks results.
 type Health interface {
 	// RegisterCheck registers a health check according to the given configuration.
-	// Once RegisterCheck() is called, the check is scheduled to run in it's own goroutine.
+	// Once RegisterCheck() is called, the check is scheduled to run in its own goroutine.
 	// Callers must make sure the checks complete at a reasonable time frame, or the next execution will delay.
 	RegisterCheck(check Check, opts ...CheckOption) error
-	// Deregister removes a health check from this instance, and stops it's next executions.
-	// If the check is running while Deregister() is called, the check may complete it's current execution.
-	// Once a check is removed, it's results are no longer returned.
+	// Deregister removes a health check from this instance, and stops its next executions.
+	// If the check is running while Deregister() is called, the check may complete its current execution.
+	// Once a check is removed, its results are no longer returned.
 	Deregister(name string)
 	// Results returns a snapshot of the health checks execution results at the time of calling, and the current health.
 	// A system is considered healthy iff all checks are passing

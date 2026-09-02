@@ -11,7 +11,7 @@ import (
 )
 
 // NewHostResolveCheck returns a gosundheit.Check that makes sure the provided host can resolve
-// to at least `minRequiredResults` IP address within the timeout specified by the provided context..
+// to at least `minRequiredResults` IP address within the timeout specified by the provided context.
 func NewHostResolveCheck(host string, minRequiredResults int) gosundheit.Check {
 	return NewResolveCheck(NewHostLookup(nil), host, minRequiredResults)
 }

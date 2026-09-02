@@ -13,7 +13,7 @@ const (
 	ReportTypeShort = "short"
 )
 
-// HandleHealthJSON returns an HandlerFunc that can be used as an endpoints that exposes the service health
+// HandleHealthJSON returns an HandlerFunc that can be used as an endpoint that exposes the service health
 func HandleHealthJSON(h gosundheit.Health) http.HandlerFunc {
 	return func(w http.ResponseWriter, request *http.Request) {
 		results, healthy := h.Results()

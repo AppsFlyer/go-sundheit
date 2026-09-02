@@ -368,7 +368,7 @@ The aggregation uses the following tags:
    * `check=allChecks`     - all checks aggregation
    * `check=<check-name>`  - specific check aggregation
    * `check-passing=[true|false]` 
-* `health/executeTime` - The time it took to execute a checks. Using the following tag:
+* `health/executeTime` - The time it took to execute a check. Using the following tag:
   * `check=<check-name>`  - specific check aggregation
 
 
