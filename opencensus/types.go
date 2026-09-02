@@ -20,8 +20,8 @@ var (
 	keyCheckPassing, _   = tag.NewKey("check_passing")
 	keyClassification, _ = tag.NewKey("classification")
 
-	mCheckStatus   = stats.Int64("health/status", "An health status (0/1 for fail/pass)", "pass/fail")
-	mCheckDuration = stats.Float64("health/execute_time", "The time it took to execute a checks in ms", "ms")
+	mCheckStatus   = stats.Int64("health/status", "A health status (0/1 for fail/pass)", "pass/fail")
+	mCheckDuration = stats.Float64("health/execute_time", "The time it took to execute a check in ms", "ms")
 
 	// ViewCheckExecutionTime is the checks execution time aggregation tagged by check name
 	ViewCheckExecutionTime = &view.View{

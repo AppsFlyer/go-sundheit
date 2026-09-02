@@ -9,7 +9,7 @@ import (
 )
 
 // MetricsListener reports metrics on each check registration, start and completion event (as gosundheit.CheckListener)
-// This listener all reports metrics for the entire service health (as gosundheit.HealthListener)
+// This listener also reports metrics for the entire service health (as gosundheit.HealthListener)
 type MetricsListener struct {
 	classification string
 }

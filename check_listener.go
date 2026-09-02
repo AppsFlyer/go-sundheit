@@ -13,7 +13,7 @@ type CheckListener interface {
 	// OnCheckStarted is called when a check with the specified name has started
 	OnCheckStarted(name string)
 
-	// OnCheckCompleted is called when the check with the specified name has completed it's execution.
+	// OnCheckCompleted is called when the check with the specified name has completed its execution.
 	// The results are passed as an argument
 	OnCheckCompleted(name string, result Result)
 }
@@ -36,7 +36,7 @@ func (c CheckListeners) OnCheckStarted(name string) {
 	}
 }
 
-// OnCheckCompleted is called when the check with the specified name has completed it's execution.
+// OnCheckCompleted is called when the check with the specified name has completed its execution.
 // The results are passed as an argument
 func (c CheckListeners) OnCheckCompleted(name string, result Result) {
 	for _, listener := range c {

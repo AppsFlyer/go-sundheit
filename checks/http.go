@@ -119,7 +119,7 @@ func (check *httpCheck) Execute(ctx context.Context) (details interface{}, err e
 }
 
 // fetchURL executes the HTTP request to the target URL, and returns a `http.Response`, error.
-// It is the callers responsibility to close the response body
+// It is the caller's responsibility to close the response body
 func (check *httpCheck) fetchURL(ctx context.Context) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, check.config.Method, check.config.URL, check.config.Body())
 	if err != nil {
@@ -130,7 +130,7 @@ func (check *httpCheck) fetchURL(ctx context.Context) (*http.Response, error) {
 
 	resp, err := check.config.Client.Do(req)
 	if err != nil {
-		return nil, errors.Errorf("fail to execute '%v' request: %v", check.config.Method, err)
+		return nil, errors.Errorf("failed to execute '%v' request: %v", check.config.Method, err)
 	}
 
 	return resp, nil
