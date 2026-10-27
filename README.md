@@ -27,8 +27,8 @@ import (
 	"net/http"
 	"time"
 	"log"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/AppsFlyer/go-sundheit"
 
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
@@ -153,14 +153,16 @@ The `NewDialPinger` function supports all the network/address parameters support
 The library provides 2 means of defining a custom check.
 The bottom line is that you need an implementation of the `Check` interface:
 ```go
+import "context"
+
 // Check is the API for defining health checks.
-// A valid check has a non empty Name() and a check (Execute()) function.
+// A valid check has a non empty Name() and a check (Execute(context.Context)) function.
 type Check interface {
 	// Name is the name of the check.
 	// Check names must be metric compatible.
 	Name() string
 	// Execute runs a single time check, and returns an error when the check fails, and an optional details object.
-	Execute() (details interface{}, err error)
+	Execute(ctx context.Context) (details interface{}, err error)
 }
 ```
 See examples in the following 2 sections below.
@@ -171,11 +173,11 @@ and is the simplest way to implement a check if all you need is to define a chec
 
 Let's define a check function that fails 50% of the times:
 ```go
-func lotteryCheck() (details interface{}, err error) {
+func lotteryCheck(_ context.Context) (details interface{}, err error) {
 	lottery := rand.Float32()
 	details = fmt.Sprintf("lottery=%f", lottery)
 	if lottery < 0.5 {
-		err = errors.New("Sorry, I failed")
+		err = fmt.Errorf("Sorry, I failed")
 	}
 	return
 }
@@ -209,11 +211,11 @@ type Lottery struct {
 	probability float32
 }
 
-func (l Lottery) Execute() (details interface{}, err error) {
+func (l Lottery) Execute(_ context.Context) (details interface{}, err error) {
 	lottery := rand.Float32()
 	details = fmt.Sprintf("lottery=%f", lottery)
 	if lottery < l.probability {
-		err = errors.New("Sorry, I failed")
+		err = fmt.Errorf("Sorry, I failed")
 	}
 	return
 }
@@ -333,7 +335,7 @@ func (l checkEventsLogger) OnCheckCompleted(name string, res gosundheit.Result) 
 
 To register your listener:
 ```go
-h := gosundheit.New(gosundheit.WithCheckListeners(&checkEventsLogger))
+h := gosundheit.New(gosundheit.WithCheckListeners(&checkEventsLogger{}))
 ```
 
 Please note that your `CheckListener` implementation must not block!
@@ -348,14 +350,21 @@ For example, lets add a logging listener:
 ```go
 type healthLogger struct{}
 
-func (l healthLogger) OnResultsUpdated(results map[string]Result) {
-	log.Printf("There are %d results, general health is %t\n", len(results), allHealthy(results))
+func (l healthLogger) OnResultsUpdated(results map[string]gosundheit.Result) {
+	healthy := true
+	for _, result := range results {
+		if !result.IsHealthy() {
+			healthy = false
+			break
+		}
+	}
+	log.Printf("There are %d results, general health is %t\n", len(results), healthy)
 }
 ```
 
 To register your listener:
 ```go
-h := gosundheit.New(gosundheit.WithHealthListeners(&checkHealthLogger))
+h := gosundheit.New(gosundheit.WithHealthListeners(&healthLogger{}))
 ```
 
 ## Metrics
@@ -368,7 +377,7 @@ The aggregation uses the following tags:
    * `check=allChecks`     - all checks aggregation
    * `check=<check-name>`  - specific check aggregation
    * `check-passing=[true|false]` 
-* `health/executeTime` - The time it took to execute a checks. Using the following tag:
+* `health/execute_time` - The time it took to execute a checks. Using the following tag:
   * `check=<check-name>`  - specific check aggregation
 
 
@@ -385,7 +394,7 @@ h := gosundheit.New(gosundheit.WithCheckListeners(oc), gosundheit.WithHealthList
 // ...
 view.Register(opencensus.DefaultHealthViews...)
 // or register individual views. For example:
-view.Register(opencensus.ViewCheckExecutionTime, opencensus.ViewCheckStatusByName, ...)
+view.Register(opencensus.ViewCheckExecutionTime, opencensus.ViewCheckStatusByName)
 ```
 
 ### Classification
